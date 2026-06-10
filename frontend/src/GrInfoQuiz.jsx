@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import Scratchpad from "./components/Scratchpad";
 import "./styles/grinfo-quiz.css";
 
 const INITIAL_ELO = 1000;
@@ -179,6 +180,7 @@ export default function GrInfoQuiz() {
   const answerLockRef = useRef(false);
   const graphRef = useRef(null);
   const networkRef = useRef(null);
+  const scratchpadRef = useRef(null);
   const renderableGraphData = useMemo(
     () => parseRenderableGraphData(currentQuestion?.graphData),
     [currentQuestion]
@@ -641,6 +643,9 @@ export default function GrInfoQuiz() {
     setFeedback("");
     setUsedQuestionIds(used);
     answerLockRef.current = false;
+    if (scratchpadRef.current) {
+      scratchpadRef.current.reset();
+    }
   }
 
   const finalStats = useMemo(() => {
@@ -734,6 +739,9 @@ export default function GrInfoQuiz() {
           <button
             className="grinfo-btn"
             onClick={() => {
+              if (scratchpadRef.current) {
+                scratchpadRef.current.reset();
+              }
               resetQuiz(userElo);
             }}
           >
@@ -743,7 +751,7 @@ export default function GrInfoQuiz() {
       )}
 
       {(!loading || hasPersistedDraft) && !error && !isFinished && currentQuestion && (
-        <div className={`grinfo-card ${renderableGraphData ? "has-graph" : ""}`} ref={quizContainerRef}>
+        <div className="grinfo-card with-side-panel" ref={quizContainerRef}>
           <div className="grinfo-question-area">
             <div className="grinfo-meta">
               <span>{currentQuestion.category}</span>
@@ -782,11 +790,19 @@ export default function GrInfoQuiz() {
             )}
           </div>
 
-          {renderableGraphData && (
-            <div className="grinfo-graph-panel">
-              <div ref={graphRef} id="grinfo-graph-canvas" />
+          <div className="grinfo-side-panel">
+            {renderableGraphData && (
+              <div className="grinfo-graph-panel">
+                <div ref={graphRef} id="grinfo-graph-canvas" />
+              </div>
+            )}
+            <div className="grinfo-scratchpad-panel">
+              <Scratchpad
+                ref={scratchpadRef}
+                storageKey={`grinfo_scratchpad_q_${currentQuestion.id || "draft"}`}
+              />
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>

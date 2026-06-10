@@ -53,11 +53,16 @@
   padding: 18px;
 }
 
-.grinfo-card.has-graph {
+.grinfo-card.with-side-panel {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: minmax(0, 1fr) 340px;
   gap: 14px;
   align-items: start;
+}
+
+.grinfo-side-panel {
+  display: grid;
+  gap: 12px;
 }
 
 .grinfo-question-area {
@@ -76,6 +81,100 @@
 #grinfo-graph-canvas {
   width: 100%;
   height: 220px;
+}
+
+.grinfo-scratchpad-panel {
+  min-width: 0;
+}
+
+.grinfo-scratchpad {
+  background: #ffffff;
+  border: 1px solid #e3eefc;
+  border-radius: 10px;
+  padding: 10px;
+  box-shadow: 0 1px 2px rgba(34, 60, 80, 0.04);
+}
+
+.grinfo-scratchpad-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.grinfo-scratchpad-btn {
+  border: 1px solid #c7d6f1;
+  border-radius: 8px;
+  background: #f8fbff;
+  color: #193155;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.grinfo-scratchpad-btn.is-active {
+  background: #193155;
+  color: #ffffff;
+  border-color: #193155;
+}
+
+.grinfo-scratchpad-btn.clear {
+  margin-left: auto;
+  color: #9a1f1f;
+  border-color: #f2b6b6;
+  background: #fff7f7;
+}
+
+.grinfo-scratchpad-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #355074;
+}
+
+.grinfo-scratchpad-hint {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #4f6482;
+}
+
+.grinfo-scratchpad-canvas-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.grinfo-scratchpad-canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 1px solid #d4e3ff;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.grinfo-scratchpad-canvas.cursor-draw {
+  cursor: crosshair;
+}
+
+.grinfo-scratchpad-canvas.cursor-text {
+  cursor: text;
+}
+
+.grinfo-scratchpad-input {
+  position: absolute;
+  transform: translateY(-50%);
+  border: 1px dashed #7f95b8;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 2px 6px;
+  min-width: 80px;
+  font: 16px Arial;
+  color: #111827;
+  outline: none;
+  z-index: 2;
 }
 
 .grinfo-error {
@@ -179,4 +278,10 @@
 .grinfo-wrong-correct {
   color: #1f7a45;
   font-weight: 600;
+}
+
+@media (max-width: 1000px) {
+  .grinfo-card.with-side-panel {
+    grid-template-columns: 1fr;
+  }
 }
