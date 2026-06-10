@@ -1,4 +1,4 @@
-# LearnRoyale - Bacalaureat Learning Platform
+# GrInfo - Algorithm and Data Structures Learning Platform
 
 ## Table of Contents
 
@@ -59,56 +59,7 @@
 
 # Product Features
 
-1. All BAC Subjects
-LearnRoyale covers every subject included in the BAC exam. Students can easily select their field (Real or Uman) and dive into subject-specific content.
-
-2. Past BAC Questions (Categorized by Topic)
-The app includes real questions from previous BAC exams, organized by subject and topic for structured studying.
-
-3. Mathematics Section (Difficulty Levels: M1, M2, M3)
-Students can practice math questions based on their profile level:
-
-M1: Advanced level (Science and Technical profiles)
-
-M2: Intermediate level (Social Sciences)
-
-M3: Basic level (Arts and Vocational profiles)
-
-4. Romanian Language Section
-Contains questions about literary works, grammar, synonyms, essay structures, and typical BAC topics.
-
-5. Psihotrop Music Section
-A special section featuring Psihotrop songs that creatively explain literary works and BAC materials through music.
-
-6. Pauza de Mate Video Links
-Curated YouTube videos from Pauza de Mate, helping students visualize and better understand math concepts.
-
-7. Past BAC Tests
-Full official BAC exams from previous years available for timed practice sessions.
-
-8. General Knowledge Questions
-Includes humanities-based general knowledge questions to help students broaden their understanding beyond textbooks.
-
-9. Formula Practice Mode
-A unique section where students must write formulas from memory, reinforcing key mathematical and scientific knowledge.
-
-10. Timed Quizzes with Lives System
-Each quiz is timed. If a student answers incorrectly or runs out of time, the app shows the correct answer and removes one life — similar to Duolingo's life system.
-
-11. Learn Mode
-A study-first mode that allows users to go through materials, notes, and explanations before attempting quizzes.
-
-12. Friend Challenges & Competitions
-Students can challenge their friends to 10-question matches from the same subject, competing for high scores and rankings.
-
-13. User Forum
-A community forum where users can ask questions, share study tips, discuss BAC topics, and motivate each other.
-
-14. Learning Rewards
-Users earn points, badges, and streaks for completing lessons, quizzes, and daily goals. These can unlock bonuses or cosmetic rewards.
-
-15. Competitions & Leaderboards
-National or school-wide competitions encourage students to test their knowledge and climb the leaderboard for prizes or recognition.
+--leaderboard, elo rankings, quizes, ai recomendation 
 
 ---
 
@@ -121,14 +72,7 @@ National or school-wide competitions encourage students to test their knowledge 
 
 3. **As a** student, **I want** to view my profile with XP, streak, and completed lessons **so that** I can track my overall progress.
 
-## Courses and Lessons
-4. **As a** BAC student, **I want** to browse courses by subject (Romanian, Math, Informatics) **so that** I can find relevant study material.
 
-5. **As a** Math student, **I want** to select my difficulty level (M1, M2, or M3) **so that** I can practice problems appropriate for my profile.
-
-6. **As a** student, **I want** to access past BAC questions categorized by topic **so that** I can practice specific areas where I need improvement.
-
-7. **As a** learner, **I want** to complete lessons in Learn Mode before taking quizzes **so that** I can understand the material first.
 
 ## Quizzes and Practice
 8. **As a** student, **I want** to take timed quizzes with a lives system **so that** I can simulate exam conditions and learn from my mistakes.
