@@ -240,7 +240,7 @@ export default function Home() {
       </section>
 
       <section className="featured-section">
-        <h3>Recomandate</h3>
+        <h3 style={{textAlign:"center"}}>Recomandate</h3>
         <div className="featured-grid">
           <Link className="featured-card" to="/grinfo/quiz?category=orientate">
             <strong>Quiz: grafuri orientate</strong>
@@ -256,67 +256,6 @@ export default function Home() {
             <strong>Start demo GrInfo</strong>
             <div className="muted">ELO inițial 1000, anti-cheat activ</div>
           </Link>
-        </div>
-      </section>
-
-      <section className="testimonials-section">
-        <h3>Ce spun utilizatorii noștri</h3>
-
-        <div className="testimonials-grid">
-          <figure className="testimonial-card">
-            <blockquote>
-              „Am înțeles grafurile mult mai bine —
-              explicațiile sunt clare și exercițiile m-au ajutat să mă
-              obișnuiesc cerintele unui examen practic.”
-            </blockquote>
-            <div className="testimonial-meta">
-              <span className="avatar" aria-hidden>
-                {" "}
-                M{" "}
-              </span>
-              <div className="meta-text">
-                <div className="meta-name">Maria</div>
-                <div className="meta-location">București</div>
-              </div>
-              <div className="rating">★★★★☆</div>
-            </div>
-          </figure>
-
-          <figure className="testimonial-card">
-            <blockquote>
-              „La grafuri orientate gasit intrebari care m-au
-              ajutat să prind ideea despre ele în 15 de minute. Foarte util!”
-            </blockquote>
-            <div className="testimonial-meta">
-              <span className="avatar" aria-hidden>
-                {" "}
-                A{" "}
-              </span>
-              <div className="meta-text">
-                <div className="meta-name">Andrei</div>
-                <div className="meta-location">Cluj</div>
-              </div>
-              <div className="rating">★★★★☆</div>
-            </div>
-          </figure>
-
-          <figure className="testimonial-card">
-            <blockquote>
-              „Secțiunea de grafuri neorientate m-a ajutat să înțeleg mai bine conceptele de baza
-               — intrebarile sunt practice și pe înțelesul meu.”
-            </blockquote>
-            <div className="testimonial-meta">
-              <span className="avatar" aria-hidden>
-                {" "}
-                I{" "}
-              </span>
-              <div className="meta-text">
-                <div className="meta-name">Ioana</div>
-                <div className="meta-location">Iași</div>
-              </div>
-              <div className="rating">★★★★★</div>
-            </div>
-          </figure>
         </div>
       </section>
 
