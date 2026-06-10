@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: grinfo
+      POSTGRES_PASSWORD: grinfo123
+      POSTGRES_DB: grinfo_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - grinfo_db_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U grinfo -d grinfo_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  grinfo_db_data: {}

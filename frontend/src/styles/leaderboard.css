@@ -1,0 +1,36 @@
+/* Reutilizăm logica din profile.css și roadmap.css */
+
+.history-card:nth-child(1) {
+  border: 2px solid #ffd700; /* Gold pentru locul 1 */
+  background: linear-gradient(145deg, #fffdf0 0%, #ffffff 100%);
+}
+
+.history-card:nth-child(2) {
+  border: 2px solid #c0c0c0; /* Silver pentru locul 2 */
+}
+
+.history-card:nth-child(3) {
+  border: 2px solid #cd7f32; /* Bronze pentru locul 3 */
+}
+
+/* Stil specific pentru rang în Hall of Fame */
+.history-course-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.history-score-badge {
+  min-width: 100px;
+  justify-content: center;
+}
+
+/* Animație de intrare în listă */
+.history-card {
+  animation: slideUp 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.history-card:nth-child(n) {
+  animation-delay: calc(0.05s * var(--index, 1));
+}

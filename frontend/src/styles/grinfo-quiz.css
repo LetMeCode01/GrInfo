@@ -1,0 +1,182 @@
+.grinfo-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.grinfo-header h1 {
+  margin-bottom: 6px;
+  color: #193155;
+}
+
+.grinfo-header p {
+  margin-top: 0;
+  color: #4f6482;
+}
+
+.grinfo-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 18px 0;
+  flex-wrap: wrap;
+}
+
+.grinfo-toolbar select {
+  margin-left: 8px;
+  padding: 6px 10px;
+}
+
+.grinfo-chip {
+  background: #edf4ff;
+  color: #193155;
+  border: 1px solid #d4e3ff;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.grinfo-alert {
+  background: #fff3cd;
+  border: 1px solid #ffe69c;
+  color: #7a5c00;
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+
+.grinfo-card {
+  background: #fff;
+  border: 1px solid #d7e3f5;
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.grinfo-card.has-graph {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 14px;
+  align-items: start;
+}
+
+.grinfo-question-area {
+  min-width: 0;
+}
+
+.grinfo-graph-panel {
+  background: #ffffff;
+  border: 1px solid #e3eefc;
+  border-radius: 10px;
+  padding: 8px;
+  box-shadow: 0 1px 2px rgba(34, 60, 80, 0.04);
+  min-height: 220px;
+}
+
+#grinfo-graph-canvas {
+  width: 100%;
+  height: 220px;
+}
+
+.grinfo-error {
+  border-color: #f3b7b7;
+  color: #962d2d;
+}
+
+.grinfo-meta {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: #4f6482;
+}
+
+.grinfo-graph-data {
+  background: #f5f9ff;
+  border: 1px dashed #bfd6ff;
+  border-radius: 10px;
+  padding: 10px;
+  margin: 14px 0;
+  color: #355074;
+  font-size: 13px;
+}
+
+.grinfo-options {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.grinfo-option {
+  text-align: left;
+  border: 1px solid #c7d6f1;
+  border-radius: 10px;
+  background: #f9fbff;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.grinfo-option:hover:enabled {
+  background: #edf4ff;
+}
+
+.grinfo-option.is-correct {
+  border-color: #198754;
+  background: #e8f8ef;
+}
+
+.grinfo-option.is-wrong {
+  border-color: #dc3545;
+  background: #fdecee;
+}
+
+.grinfo-explanation {
+  margin-top: 14px;
+  border-top: 1px solid #dce7f8;
+  padding-top: 12px;
+}
+
+.grinfo-btn {
+  margin-top: 8px;
+  border: none;
+  background: #193155;
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.grinfo-wrong-list {
+  margin-top: 16px;
+  border-top: 1px solid #dce7f8;
+  padding-top: 12px;
+}
+
+.grinfo-wrong-list h3 {
+  margin: 0 0 10px 0;
+  color: #193155;
+}
+
+.grinfo-wrong-item {
+  background: #fff6f7;
+  border: 1px solid #f5c7cc;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+
+.grinfo-wrong-question {
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: #223b60;
+}
+
+.grinfo-wrong-answer {
+  font-size: 14px;
+  color: #4f6482;
+}
+
+.grinfo-wrong-correct {
+  color: #1f7a45;
+  font-weight: 600;
+}
