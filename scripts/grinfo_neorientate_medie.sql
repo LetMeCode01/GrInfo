@@ -44,7 +44,7 @@ VALUES (currval(pg_get_serial_sequence('grinfo_questions','id')),0,'1',FALSE),(c
 INSERT INTO grinfo_questions (category_id, difficulty, elo_rating, enunt, explicatie_raspuns, graph_data, is_active)
 VALUES ((SELECT id FROM grinfo_categories WHERE slug='neorientate'),'medie',1543,$q$[Neorientate 20] Care este valoarea gradului maxim (Delta(G)) întâlnit în graful de mai jos?$q$,$q$Nodul 1 este nod central și are 3 muchii care pleacă din el. Toate celelalte noduri au gradul 1.$q$,$j${"nodes":[{"id":1},{"id":2},{"id":3},{"id":4}],"edges":[{"from":1,"to":2},{"from":1,"to":3},{"from":1,"to":4}]}$j$::jsonb, TRUE);
 INSERT INTO grinfo_question_options (question_id, option_index, option_text, is_correct)
-VALUES (currval(pg_get_serial_sequence('grinfo_questions','id')),0,'1',FALSE),(currval(pg_get_serial_sequence('grinfo_questions','id')),1,'2',TRUE),(currval(pg_get_serial_sequence('grinfo_questions','id')),2,'3',FALSE),(currval(pg_get_serial_sequence('grinfo_questions','id')),3,'4',FALSE);
+VALUES (currval(pg_get_serial_sequence('grinfo_questions','id')),0,'1',FALSE),(currval(pg_get_serial_sequence('grinfo_questions','id')),1,'2',FALSE),(currval(pg_get_serial_sequence('grinfo_questions','id')),2,'3',TRUE),(currval(pg_get_serial_sequence('grinfo_questions','id')),3,'4',FALSE);
 
 COMMIT;
 

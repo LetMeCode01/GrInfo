@@ -175,6 +175,9 @@ export default function GrInfoQuiz() {
   const [targetDifficulty, setTargetDifficulty] = useState("usoara");
   const [difficultyStreaks, setDifficultyStreaks] = useState({ usoara: 0, medie: 0, grea: 0 });
   const [selectedDifficultyChoice, setSelectedDifficultyChoice] = useState(initialDifficultyChoice);
+  const [aiReview, setAiReview] = useState("");
+  const [aiReviewLoading, setAiReviewLoading] = useState(false);
+  const [aiReviewError, setAiReviewError] = useState("");
 
   const quizContainerRef = useRef(null);
   const answerLockRef = useRef(false);
@@ -200,6 +203,9 @@ export default function GrInfoQuiz() {
     setHistory([]);
     setSessionSaved(false);
     setSessionId(null);
+    setAiReview("");
+    setAiReviewError("");
+    setAiReviewLoading(false);
     answerLockRef.current = false;
     try {
       localStorage.removeItem(QUIZ_STATE_KEY);
@@ -492,13 +498,14 @@ export default function GrInfoQuiz() {
 
       graphRef.current.innerHTML = "";
       const nodes = renderableGraphData.nodes.map((n) => ({ id: n.id, label: String(n.id) }));
+      const questionCategory = String(currentQuestion?.category || "").toLowerCase();
       const edges = renderableGraphData.edges.map((e) => ({
         from: e.from ?? e.source,
         to: e.to ?? e.target,
         label: e.label ?? e.weight ?? e.cost ?? null,
         arrows:
           e.arrows ??
-          (e.type === "->" ? "to" : selectedCategory === "orientate" ? "to" : undefined),
+          (e.type === "->" ? "to" : questionCategory === "orientate" ? "to" : undefined),
       }));
 
       try {
@@ -537,7 +544,7 @@ export default function GrInfoQuiz() {
     return () => {
       cancelled = true;
     };
-  }, [renderableGraphData]);
+  }, [renderableGraphData, currentQuestion]);
 
   async function onSelectAnswer(index) {
     if (!currentQuestion || showExplanation || answerLockRef.current) return;
@@ -659,6 +666,100 @@ export default function GrInfoQuiz() {
     };
   }, [history]);
 
+  function renderSafeReviewText(text) {
+    const mdLinkRegex = /\[([^\]]+)\]\((https:\/\/[^\s)]+)\)/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = mdLinkRegex.exec(text)) !== null) {
+      const [raw, label, href] = match;
+      const start = match.index;
+      if (start > lastIndex) {
+        parts.push(text.slice(lastIndex, start));
+      }
+
+      let safe = false;
+      try {
+        const parsed = new URL(href);
+        safe =
+          parsed.protocol === "https:" &&
+          (parsed.hostname === "www.youtube.com" || parsed.hostname === "youtube.com") &&
+          parsed.pathname === "/results" &&
+          parsed.searchParams.get("search_query");
+      } catch (_error) {
+        safe = false;
+      }
+
+      if (safe) {
+        parts.push(
+          <a key={`${href}-${start}`} href={href} target="_blank" rel="noopener noreferrer">
+            {label}
+          </a>
+        );
+      } else {
+        parts.push(raw);
+      }
+
+      lastIndex = start + raw.length;
+    }
+
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex));
+    }
+
+    return parts;
+  }
+
+  async function handleAiAnalysis() {
+    setAiReviewLoading(true);
+    setAiReviewError("");
+    setAiReview("");
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setAiReviewLoading(false);
+      setAiReviewError("Trebuie sa fii autentificat pentru analiza AI.");
+      return;
+    }
+
+    try {
+      const wrongQuestions = finalStats.wrongAnswers.map((entry) => ({
+        text: entry.questionText,
+        category: entry.category,
+        userAnswer: entry.selectedOptionText,
+        correctAnswer: entry.correctAnswerText,
+      }));
+
+      const response = await fetch("/api/grinfo/ai-review", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          currentElo: userElo,
+          wrongQuestions,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || "Nu s-a putut genera analiza AI.");
+      }
+
+      if (!data?.review || typeof data.review !== "string") {
+        throw new Error("Raspuns AI invalid.");
+      }
+
+      setAiReview(data.review);
+    } catch (error) {
+      setAiReviewError(error?.message || "Eroare de conexiune cu serviciul AI.");
+    } finally {
+      setAiReviewLoading(false);
+    }
+  }
+
   return (
     <div className="grinfo-page">
       <div className="grinfo-header">
@@ -733,6 +834,23 @@ export default function GrInfoQuiz() {
                   <div className="grinfo-wrong-answer grinfo-wrong-correct">Corect era: {entry.correctAnswerText}</div>
                 </div>
               ))}
+
+              <button
+                className="grinfo-btn grinfo-ai-btn"
+                onClick={handleAiAnalysis}
+                disabled={aiReviewLoading}
+              >
+                {aiReviewLoading ? "Analiza AI se genereaza..." : "Analiza AI"}
+              </button>
+
+              {aiReviewError && <div className="grinfo-alert grinfo-ai-error">{aiReviewError}</div>}
+
+              {aiReview && (
+                <div className="grinfo-ai-review">
+                  <h3>Analiza AI</h3>
+                  <div className="grinfo-ai-review-text">{renderSafeReviewText(aiReview)}</div>
+                </div>
+              )}
             </div>
           )}
 

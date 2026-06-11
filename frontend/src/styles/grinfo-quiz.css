@@ -280,6 +280,45 @@
   font-weight: 600;
 }
 
+.grinfo-ai-btn {
+  margin-top: 12px;
+  background: #22407a;
+}
+
+.grinfo-ai-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.grinfo-ai-review {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #dbe7fb;
+  border-radius: 10px;
+  background: #f6f9ff;
+}
+
+.grinfo-ai-review h3 {
+  margin: 0 0 8px 0;
+  color: #1d3561;
+}
+
+.grinfo-ai-review-text {
+  white-space: pre-wrap;
+  line-height: 1.6;
+  color: #2b466f;
+}
+
+.grinfo-ai-review-text a {
+  color: #0a58ca;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.grinfo-ai-error {
+  margin-top: 10px;
+}
+
 @media (max-width: 1000px) {
   .grinfo-card.with-side-panel {
     grid-template-columns: 1fr;

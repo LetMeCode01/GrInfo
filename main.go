@@ -1454,6 +1454,7 @@ func main() {
 	mux.HandleFunc("/api/grinfo/incident", apiGrInfoIncidentHandler)
 	mux.HandleFunc("/api/grinfo/session", authMiddleware(apiGrInfoSessionHandler))
 	mux.HandleFunc("/api/grinfo/profile", authMiddleware(apiGrInfoProfileHandler))
+	mux.HandleFunc("/api/grinfo/ai-review", authMiddleware(apiGrInfoAIReviewHandler))
 	mux.HandleFunc("/api/reviews", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			apiCreateReviewHandler(w, r)
