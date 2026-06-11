@@ -808,6 +808,32 @@ func apiGrInfoProfileHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	eloRows, err := db.Query(`
+		SELECT
+			COALESCE(final_elo, initial_elo, 1000) AS display_elo,
+			COALESCE(ended_at, started_at, NOW()) AS at_time
+		FROM grinfo_sessions
+		WHERE user_id = $1
+		ORDER BY id DESC
+	`, uid)
+	if err != nil {
+		jsonError(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	defer eloRows.Close()
+
+	eloHistory := make([]map[string]interface{}, 0)
+	for eloRows.Next() {
+		var elo float64
+		var atTime time.Time
+		if err := eloRows.Scan(&elo, &atTime); err == nil {
+			eloHistory = append(eloHistory, map[string]interface{}{
+				"elo": elo,
+				"at":  atTime.Format(time.RFC3339),
+			})
+		}
+	}
+
 	var securityEvents int
 	_ = db.QueryRow(`SELECT COUNT(*) FROM grinfo_security_logs WHERE user_id = $1`, uid).Scan(&securityEvents)
 
@@ -816,6 +842,7 @@ func apiGrInfoProfileHandler(w http.ResponseWriter, r *http.Request) {
 		"currentElo":             currentElo,
 		"securityEvents":         securityEvents,
 		"history":                history,
+		"eloHistory":             eloHistory,
 		"totalSessions":          totalSessions,
 		"totalCorrectAnswers":    totalCorrectAnswers,
 		"totalQuestionsAnswered": totalQuestionsAnswered,

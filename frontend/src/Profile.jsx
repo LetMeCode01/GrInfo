@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import EloChart from "./components/EloChart";
 import "./styles/profile.css";
 
 export default function Profile() {
@@ -105,6 +106,34 @@ export default function Profile() {
 
     return `📅 ${datePart} • 🕒 ${timePart}`;
   };
+
+  const formatChartDate = (rawValue) => {
+    const date = new Date(rawValue);
+    if (Number.isNaN(date.getTime())) {
+      return "Data indisponibila";
+    }
+
+    return date.toLocaleDateString("ro-RO", {
+      day: "numeric",
+      month: "short",
+    });
+  };
+
+  const rawEloHistory = Array.isArray(grInfoProfile?.eloHistory)
+    ? grInfoProfile.eloHistory
+    : Array.isArray(grInfoProfile?.history)
+      ? grInfoProfile.history
+      : [];
+
+  const grInfoMatchesData = rawEloHistory
+    ? rawEloHistory
+        .filter((item) => item && (item.elo != null || item.finalElo != null))
+        .map((item) => ({
+          elo: Number(item.elo != null ? item.elo : item.finalElo),
+          date: formatChartDate(item.at || item.endedAt || item.startedAt || item.createdAt),
+        }))
+        .filter((item) => Number.isFinite(item.elo))
+    : [];
     
   if (loading) {
     return (
@@ -191,6 +220,8 @@ export default function Profile() {
                 <div className="stat-sublabel">Bazată pe răspunsuri corecte</div>
               </div>
             </div>
+
+            <EloChart matchesData={grInfoMatchesData} />
 
             {Array.isArray(grInfoProfile.history) && grInfoProfile.history.length > 0 ? (
               <div className="history-list" style={{ marginTop: 16 }}>
