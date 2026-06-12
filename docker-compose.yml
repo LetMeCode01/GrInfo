@@ -1,5 +1,8 @@
+name: proiect-licenta-grinfo-main
+
 services:
   db:
+    container_name: proiect-licenta-grinfo-main
     image: postgres:15
     restart: unless-stopped
     environment:
@@ -17,4 +20,6 @@ services:
       retries: 10
 
 volumes:
-  db_data: {}
+  db_data:
+    external: true
+    name: grinfo_db_data

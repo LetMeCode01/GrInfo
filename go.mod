@@ -1,4 +1,4 @@
-module learnroyale
+module grinfo
 
 go 1.25.2
 

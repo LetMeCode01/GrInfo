@@ -48,7 +48,7 @@
 
 **WHO** want an engaging, efficient, and personalized way to learn theory, practice problems, and track their progress
 
-**THE** LearnRoyale App IS an intelligent learning ecosystem, available on mobile and web,
+**THE** GrInfo App IS an intelligent learning ecosystem, available on mobile and web,
 
 **THAT** combines structured courses, adaptive quizzes, personalized tutoring sessions, and AI powered feedback to help users build confidence, improve understanding, and achieve their academic goals.
 **UNLIKE** traditional tutoring, static textbooks, or scattered online resources,
@@ -117,19 +117,19 @@
 # User Scenarios (Usage Examples)
 
 Scenario 1: Daily Practice
-> User opens LearnRoyale before school and takes a short 5-minute Romanian quiz. He answers most questions correctly, earns a few points, and keeps his 10-day streak going.
+> User opens GrInfo before school and takes a short 5-minute Romanian quiz. He answers most questions correctly, earns a few points, and keeps his 10-day streak going.
 
 Scenario 2: Quick Revision
-> User uses LearnRoyale on the bus to review formulas for Math. User writes a few from memory in Formula Mode and sees instant feedback when User gets one wrong.
+> User uses GrInfo on the bus to review formulas for Math. User writes a few from memory in Formula Mode and sees instant feedback when User gets one wrong.
 
 Scenario 3: Friend Challenge
-> User invites his friend to a short Literature challenge in LearnRoyale. They both answer 10 questions, and User wins by just one point. They laugh about it and decide to rematch later.
+> User invites his friend to a short Literature challenge in GrInfo. They both answer 10 questions, and User wins by just one point. They laugh about it and decide to rematch later.
 
 Scenario 4: Learning Through Music
 > User listens to Psihotrop songs in the Romanian section while reading the related literary notes. User remembers the main ideas more easily when studying later.
 
 Scenario 5: Competition Day
-> During the weekend, LearnRoyale launches a mini BAC competition. Dozens of students from the same school join in, and everyone tries to reach the leaderboard.
+> During the weekend, GrInfo launches a mini BAC competition. Dozens of students from the same school join in, and everyone tries to reach the leaderboard.
 
 Scenario 6: AI Tutor Assistance
 > User is stuck on a complex math problem. User opens the AI Chat and asks for help. The AI tutor explains the concept step-by-step, and User finally understands how to solve similar problems.
@@ -138,7 +138,7 @@ Scenario 7: Pre-Exam Full Test
 > Two weeks before BAC, User takes a complete past exam in timed mode. User identifies weak areas and spends the remaining days focusing on those topics.
 
 Scenario 8: Newsletter Discovery
-> User subscribes to the LearnRoyale newsletter. Every week, User receives study tips and notifications about new courses, helping User stay on track.
+> User subscribes to the GrInfo newsletter. Every week, User receives study tips and notifications about new courses, helping User stay on track.
 
 ---
 
@@ -146,7 +146,7 @@ Scenario 8: Newsletter Discovery
 
 ## UML Diagram Explanation (Use Case)
 
-The Use Case UML diagram presents the interactions between users (actors) and the main functionalities of the LearnRoyale system:
+The Use Case UML diagram presents the interactions between users (actors) and the main functionalities of the GrInfo system:
 
 **Actors:**
 - **Student** - the main user who accesses the platform for learning
@@ -169,12 +169,12 @@ The Use Case UML diagram presents the interactions between users (actors) and th
 
 ## Context Diagram Explanation (C4 Level 1)
 
-The context diagram presents the LearnRoyale system from a high-level perspective (C4 Model - Level 1), showing how it interacts with users and external systems:
+The context diagram presents the GrInfo system from a high-level perspective (C4 Model - Level 1), showing how it interacts with users and external systems:
 
 **Main Entities:**
 - **Student** - The end user who accesses the platform through a browser (HTTPS)
-- **LearnRoyale Account** - The user identity management system
-- **LearnRoyale** - The main application (monolith)
+- **GrInfo Account** - The user identity management system
+- **GrInfo** - The main application (monolith)
 
 **External Systems:**
 - **PostgreSQL Database** - Relational database for storing users, progress, courses, and reviews (SQL communication)
@@ -191,21 +191,21 @@ The context diagram presents the LearnRoyale system from a high-level perspectiv
 ```mermaid
 flowchart TB
    student["Student"]
-   account["LearnRoyale Account\n(User Account)"]
-   learnroyale["LearnRoyale"]
+    account["GrInfo Account\n(User Account)"]
+    grinfo["GrInfo"]
    db[("PostgreSQL Database")]
    gemini["Google Gemini API"]
    smtp["SMTP E-mail Server"]
    yt["YouTube"]
 
-   student -->|"Creates/uses account"| account
-   account -->|"Authenticates in"| learnroyale
-   student -->|"Uses platform (HTTPS)"| learnroyale
-   learnroyale -->|"Reads/Writes (SQL)"| db
-   learnroyale -->|"Prompts & responses (HTTPS/JSON)"| gemini
-   learnroyale -->|"Welcome email (SMTP/TLS)"| smtp
+    student -->|"Creates/uses account"| account
+    account -->|"Authenticates in"| grinfo
+    student -->|"Uses platform (HTTPS)"| grinfo
+    grinfo -->|"Reads/Writes (SQL)"| db
+    grinfo -->|"Prompts & responses (HTTPS/JSON)"| gemini
+    grinfo -->|"Welcome email (SMTP/TLS)"| smtp
    smtp -->|"Delivers emails to"| student
-   learnroyale -->|"Embeds video (iframe)"| yt
+    grinfo -->|"Embeds video (iframe)"| yt
 ```
 
 ---
@@ -214,7 +214,7 @@ flowchart TB
 
 ## Container Diagram Explanation (C4 Level 2)
 
-The container diagram details the major components of the LearnRoyale system and how they communicate with each other:
+The container diagram details the major components of the GrInfo system and how they communicate with each other:
 
 **Main Containers:**
 - **Single-Page Application (SPA)** - The React frontend that runs in the user's browser, providing the interactive interface
@@ -336,7 +336,7 @@ flowchart LR
 
 ## Product Summary
 
-LearnRoyale is a complete educational platform for Baccalaureate exam preparation, built using a modern client-server architecture. The application combines an interactive React frontend with a performant Go backend, offering advanced features such as AI tutoring, gamification, and progress monitoring.
+GrInfo is a complete educational platform for Baccalaureate exam preparation, built using a modern client-server architecture. The application combines an interactive React frontend with a performant Go backend, offering advanced features such as AI tutoring, gamification, and progress monitoring.
 
 ### Comparison with Intermediate Deliverable
 
@@ -364,7 +364,7 @@ LearnRoyale is a complete educational platform for Baccalaureate exam preparatio
 ## C4 Diagrams Description
 
 ### System Diagram (Context)
-Visualized above - shows the LearnRoyale system and interactions with external actors (Student, PostgreSQL, Gemini, SMTP, YouTube).
+Visualized above - shows the GrInfo system and interactions with external actors (Student, PostgreSQL, Gemini, SMTP, YouTube).
 
 ### Container Diagram
 Visualized above - details the 3 main containers: React SPA, Go API Application, PostgreSQL Database.
@@ -679,8 +679,8 @@ go test -v ./...
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/unibuc-ro/proiect-inginerie-software-learnroyale.git
-cd proiect-inginerie-software-learnroyale
+git clone https://github.com/unibuc-ro/proiect-licenta-grinfo.git
+cd proiect-licenta-grinfo
 ```
 
 ### 2. Setup Environment Variables

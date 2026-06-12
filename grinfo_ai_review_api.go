@@ -186,11 +186,20 @@ func enforceSafeYouTubeLinks(review string, wrongQuestions []GrInfoAIWrongQuesti
 		return ""
 	})
 
+	// Calculate dynamic number of recommendations: 1 min, 5 max, based on wrong questions count.
+	maxRecs := 5
+	if len(wrongQuestions) < 5 {
+		maxRecs = len(wrongQuestions)
+	}
+	if maxRecs < 1 {
+		maxRecs = 1
+	}
+
 	safeLinks := extractSafeMarkdownYouTubeLinks(cleaned)
-	if len(safeLinks) < 2 {
+	if len(safeLinks) < maxRecs {
 		fallback := buildFallbackYouTubeLinks(wrongQuestions)
 		for _, f := range fallback {
-			if len(safeLinks) >= 2 {
+			if len(safeLinks) >= maxRecs {
 				break
 			}
 			safeLinks = append(safeLinks, f)
@@ -212,7 +221,7 @@ func enforceSafeYouTubeLinks(review string, wrongQuestions []GrInfoAIWrongQuesti
 	}
 
 	for i, l := range safeLinks {
-		if i >= 2 {
+		if i >= maxRecs {
 			break
 		}
 		output = append(output, "- "+l)
