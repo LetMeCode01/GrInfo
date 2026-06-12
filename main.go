@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"crypto/tls"
 	"database/sql"
 	"encoding/json"
@@ -57,10 +56,6 @@ type ProgressRequest struct {
 
 type ErrorResponse struct {
 	Error string `json:"error"`
-}
-
-type AIChatRequest struct {
-	Prompt string `json:"prompt"`
 }
 
 type SubscribeRequest struct {
@@ -1168,114 +1163,6 @@ func apiUserLessonsHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(result)
 }
 
-func apiAIChatHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		jsonError(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	var req AIChatRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		jsonError(w, "Invalid request", http.StatusBadRequest)
-		return
-	}
-
-	apiKey := os.Getenv("GEMINI_API_KEY")
-	if apiKey == "" {
-		fmt.Println("GEMINI_API_KEY not set in environment")
-		jsonError(w, "AI Service not configured", http.StatusInternalServerError)
-		return
-	}
-
-	fmt.Printf("API Key loaded (length: %d)\n", len(apiKey))
-	fmt.Printf("User prompt: %s\n", req.Prompt)
-
-	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey
-	fmt.Printf("Using model: gemini-2.5-flash (API v1beta)\n")
-	systemContext := "Ești Royale AI, un profesor prietenos de BAC (Română, Mate, Info). " +
-		"REGULI:\n" +
-		"1. Dacă elevul glumește sau menționează jocuri/sport, corectează-l blând și revino la subiect.\n" +
-		"2. Oferă explicații clare, dar concise (maxim 400 caractere).\n" +
-		"3. Într-un quiz, monitorizează progresul și treci la următoarea întrebare după ce elevul răspunde.\n" +
-		"4. Folosește bullet points (•) pentru liste."
-	payload := map[string]interface{}{
-		"contents": []interface{}{
-			map[string]interface{}{
-				"parts": []interface{}{
-					map[string]string{"text": systemContext + "\n\nIntrebare: " + req.Prompt},
-				},
-			},
-		},
-	}
-
-	jsonData, err := json.Marshal(payload)
-	if err != nil {
-		fmt.Printf("Error marshaling payload: %v\n", err)
-		jsonError(w, "Request formatting error", http.StatusInternalServerError)
-		return
-	}
-
-	fmt.Printf("Sending request to Gemini API...\n")
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		fmt.Printf("AI Service request error: %v\n", err)
-		jsonError(w, "AI Service Error", http.StatusInternalServerError)
-		return
-	}
-	defer resp.Body.Close()
-
-	fmt.Printf("Response status: %d\n", resp.StatusCode)
-
-	if resp.StatusCode != http.StatusOK {
-		var errorBody bytes.Buffer
-		errorBody.ReadFrom(resp.Body)
-		errorStr := errorBody.String()
-
-		bodyBytes, _ := json.Marshal(payload)
-		fmt.Printf("AI Service returned status %d\n", resp.StatusCode)
-		fmt.Printf("Response body: %s\n", errorStr)
-		fmt.Printf("Request body was: %s\n", string(bodyBytes))
-		jsonError(w, "AI Service Error: "+resp.Status, http.StatusInternalServerError)
-		return
-	}
-
-	var geminiResp struct {
-		Candidates []struct {
-			Content struct {
-				Parts []struct {
-					Text string `json:"text"`
-				} `json:"parts"`
-			} `json:"content"`
-		} `json:"candidates"`
-		Error *struct {
-			Message string `json:"message"`
-		} `json:"error"`
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&geminiResp); err != nil {
-		fmt.Printf("Failed to parse AI response: %v\n", err)
-		jsonError(w, "Failed to parse AI response", http.StatusInternalServerError)
-		return
-	}
-
-	if geminiResp.Error != nil {
-		fmt.Printf("[ERROR] API Error: %s\n", geminiResp.Error.Message)
-		jsonError(w, "API Error: "+geminiResp.Error.Message, http.StatusInternalServerError)
-		return
-	}
-
-	responseText := "Ne pare rau, AI-ul nu a putut genera un raspuns."
-	if len(geminiResp.Candidates) > 0 && len(geminiResp.Candidates[0].Content.Parts) > 0 {
-		responseText = geminiResp.Candidates[0].Content.Parts[0].Text
-		fmt.Printf("AI Response generated (%d characters)\n", len(responseText))
-	} else {
-		fmt.Println("No candidates in response")
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"text": responseText})
-}
-
 // POST /api/reviews - Create a new review
 func apiCreateReviewHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -1438,7 +1325,6 @@ func main() {
 	mux.HandleFunc("/api/profile", authMiddleware(apiProfileHandler))
 	mux.HandleFunc("/api/progress", authMiddleware(apiSaveProgressHandler))
 	mux.HandleFunc("/api/stats", authMiddleware(apiStatsHandler))
-	mux.HandleFunc("/api/ai-chat", authMiddleware(apiAIChatHandler))
 
 	mux.HandleFunc("/api/courses", apiCoursesHandler)
 	mux.HandleFunc("/api/course", apiCourseHandler)
