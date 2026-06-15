@@ -168,34 +168,6 @@ export default function Home() {
         </p>
       </section>
 
-      <section className="newsletter-section">
-        <div className="newsletter-card">
-          <div>
-            <strong>Rămâi la curent</strong>
-            <div className="muted">
-              Abonează-te pentru resurse, modele și teste noi
-            </div>
-          </div>
-          <form className="newsletter-form" onSubmit={handleSubscribe}>
-            <input
-              aria-label="Adresa de email"
-              className="newsletter-input"
-              placeholder="email@exemplu.com"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <button
-              className="cta-primary"
-              type="submit"
-              disabled={isLoading}
-            >
-              {isLoading ? "Se procesează..." : "Abonează-te"}
-            </button>
-          </form>
-        </div>
-      </section>
-
       <section className="subjects-section">
         <div className="subject-grid">
           <div className="subject-card">
