@@ -46,4 +46,3 @@ curl http://localhost:8000/api/leaderboard
 
 Notes:
 - `main.go` auto-creates the Postgres tables at startup. Do not use the `schema.sql` (it's SQLite formatted) unless you convert the code to SQLite.
-- If you prefer I can: (A) create a `docker-compose` + `Makefile` or `run` scripts, or (B) modify the backend to use SQLite instead of Postgres. Tell me which option you want next.
