@@ -57,9 +57,3 @@ Fiecare intrebare intoarsa de API contine:
   }
 }
 ```
-
-## Nota
-
-Aplicatia frontend foloseste quiz secvential (1 intrebare/pagina), ELO K=32 cu ELO initial 1000 si anti-cheat (visibilitychange, contextmenu, copy).
-
-Backend-ul mentine banca de intrebari cu target minim de 50 intrebari active: 25 orientate + 25 neorientate.
