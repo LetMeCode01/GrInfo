@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import Home from "./Home";
 import Profile from "./Profile";
@@ -13,6 +13,9 @@ import "./assets/main.css";
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
+  const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
+  const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
+  const themeMenuRef = useRef(null);
   
   const handleAuthChange = () => {
     setToken(localStorage.getItem("token"));
@@ -21,25 +24,72 @@ export default function App() {
     window.addEventListener("storage", handleAuthChange);
     return () => window.removeEventListener("storage", handleAuthChange);
   }, []);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  useEffect(() => {
+    const closeOnOutsideClick = (event) => {
+      if (themeMenuRef.current && !themeMenuRef.current.contains(event.target)) {
+        setIsThemeMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+  }, []);
+
   const logout = () => {
     localStorage.clear();
     setToken(null); 
     window.location.href = "/";
   };
+
+  const selectTheme = (nextTheme) => {
+    setTheme(nextTheme);
+    setIsThemeMenuOpen(false);
+  };
+
   return (
     <BrowserRouter>
       <header>
         <title>GrInfo</title>
-        <div
-          className="header-container"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "16px",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center" }}>
+        <div className="header-container">
+          <div className="header-left">
+            <div className="theme-switcher" ref={themeMenuRef}>
+              <button
+                type="button"
+                className="theme-switcher-btn"
+                onClick={() => setIsThemeMenuOpen((open) => !open)}
+                aria-haspopup="menu"
+                aria-expanded={isThemeMenuOpen}
+                aria-label="Alege tema"
+              >
+                💡
+              </button>
+              {isThemeMenuOpen && (
+                <div className="theme-switcher-menu" role="menu" aria-label="Temă">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className={`theme-option ${theme === "dark" ? "active" : ""}`}
+                    onClick={() => selectTheme("dark")}
+                  >
+                    Dark mode
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className={`theme-option ${theme === "light" ? "active" : ""}`}
+                    onClick={() => selectTheme("light")}
+                  >
+                    Light mode
+                  </button>
+                </div>
+              )}
+            </div>
             <Link
               to="/"
               className="logo-link"
@@ -70,36 +120,30 @@ export default function App() {
 
           <nav
             className="nav-subjects"
-            style={{
-              display: "flex",
-              gap: 12,
-              justifyContent: "center",
-            }}
           >
-            <Link className="subject-link" to="/grinfo/quiz">
+            <Link className="subject-link header-pill pill-quiz" to="/grinfo/quiz">
               📊 Quiz Grafuri
             </Link>
-            <Link className="subject-link" to="/leaderboard" style={{ borderLeft: "1px solid #ddd", paddingLeft: "12px" }}>
-              🏆 Top
+            <Link className="subject-link nav-chip-link header-pill pill-top" to="/leaderboard">
+              🏆 Leaderboard
             </Link>
           </nav>
 
-          <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+          <div className="header-actions">
           {token ? (
             <>
-              <Link className="profile-link" to="/profile">👤 Profil</Link>
+              <Link className="profile-link header-action-btn" to="/profile">👤 Profil</Link>
               <button 
-                className="profile-link" 
+                className="profile-link logout-link header-action-btn" 
                 onClick={logout}
-                style={{ cursor: "pointer", background: "none", border: "2px solid #667eea" }}
               >
                 🚪 Deconectare
               </button>
             </>
           ) : (
             <>
-              <Link className="profile-link" to="/register">✨ Înregistrare</Link>
-              <Link className="profile-link" to="/login">🔐 Autentificare</Link>
+              <Link className="profile-link header-action-btn" to="/register">✨ Înregistrare</Link>
+              <Link className="profile-link header-action-btn" to="/login">🔐 Autentificare</Link>
             </>
           )}
           </div>

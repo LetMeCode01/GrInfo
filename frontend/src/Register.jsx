@@ -65,83 +65,60 @@ export default function Register({ onRegister }) {
   };
 
   return (
-    <div style={{
-        minHeight: "calc(100vh - 120px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-        padding: "20px",
-      }}>
-      <div style={{
-          background: "#fff",
-          borderRadius: "12px",
-          boxShadow: "0 10px 40px rgba(0, 0, 0, 0.15)",
-          maxWidth: "450px",
-          width: "100%",
-          padding: "40px",
-        }}>
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <h1 style={{ fontSize: "28px", fontWeight: 700, color: "#222", margin: "0 0 8px 0" }}>Înregistrare</h1>
-          <p style={{ color: "#666", fontSize: "14px", margin: 0 }}>Creează un cont pentru a accesa GrInfo</p>
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-head">
+          <h1>Înregistrare</h1>
+          <p>Creează un cont pentru a accesa GrInfo</p>
         </div>
 
         <form onSubmit={handleSubmit}>
           {error && (
-            <div style={{ padding: "12px", marginBottom: "20px", backgroundColor: "#fee", color: "#c33", borderRadius: "8px", fontSize: "14px" }}>
+            <div className="auth-error">
               {error}
             </div>
           )}
           
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: "block", marginBottom: "8px", fontWeight: 600, color: "#333", fontSize: "14px" }}>Nume complet</label>
+          <div className="auth-field">
+            <label>Nume complet</label>
             <input
               type="text"
               name="name"
               value={formData.name}
               onChange={handleChange}
               placeholder="Ex. Ion Popescu"
-              style={{ width: "100%", padding: "12px 14px", border: "1px solid #ddd", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box", outline: "none" }}
+              className="auth-input"
             />
           </div>
 
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: "block", marginBottom: "8px", fontWeight: 600, color: "#333", fontSize: "14px" }}>Email</label>
+          <div className="auth-field">
+            <label>Email</label>
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
               placeholder="email@exemplu.com"
-              style={{ width: "100%", padding: "12px 14px", border: "1px solid #ddd", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box", outline: "none" }}
+              className="auth-input"
             />
           </div>
 
-          <div style={{ marginBottom: 28 }}>
-            <label style={{ display: "block", marginBottom: "8px", fontWeight: 600, color: "#333", fontSize: "14px" }}>Parolă</label>
+          <div className="auth-field auth-field-last">
+            <label>Parolă</label>
             <input
               type="password"
               name="password"
               value={formData.password}
               onChange={handleChange}
               placeholder="••••••••"
-              style={{ width: "100%", padding: "12px 14px", border: "1px solid #ddd", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box", outline: "none" }}
+              className="auth-input"
             />
           </div>
 
           <button
             type="submit"
-            style={{
-              width: "100%",
-              padding: "12px 16px",
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              color: "#fff",
-              border: "none",
-              borderRadius: "8px",
-              fontSize: "15px",
-              fontWeight: 600,
-              cursor: loading ? "not-allowed" : "pointer",
-            }}
+            disabled={loading}
+            className="auth-submit"
           >
             {loading ? "Se înregistrează..." : "Înregistrează-te"}
           </button>

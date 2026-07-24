@@ -6,6 +6,7 @@ import "./assets/enhanced-styles.css";
 import "./assets/header-styles.css";
 import "./assets/utility-styles.css";
 import "./styles/roadmap.css";
+import "./assets/graph-studio-overrides.css";
 
 const container = document.getElementById("root");
 const root = createRoot(container);

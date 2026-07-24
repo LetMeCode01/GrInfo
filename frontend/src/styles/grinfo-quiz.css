@@ -6,12 +6,12 @@
 
 .grinfo-header h1 {
   margin-bottom: 6px;
-  color: #193155;
+  color: #0f2f4d;
 }
 
 .grinfo-header p {
   margin-top: 0;
-  color: #4f6482;
+  color: #3e5a78;
 }
 
 .grinfo-toolbar {
@@ -28,9 +28,9 @@
 }
 
 .grinfo-chip {
-  background: #edf4ff;
-  color: #193155;
-  border: 1px solid #d4e3ff;
+  background: #dcf2ff;
+  color: #075985;
+  border: 1px solid #b7dcf8;
   border-radius: 999px;
   padding: 6px 12px;
   font-weight: 600;
@@ -47,10 +47,11 @@
 }
 
 .grinfo-card {
-  background: #fff;
-  border: 1px solid #d7e3f5;
+  background: linear-gradient(180deg, #ffffff 0%, #f6fbff 100%);
+  border: 1px solid #c6dbef;
   border-radius: 12px;
   padding: 18px;
+  box-shadow: 0 12px 28px rgba(3, 105, 161, 0.1);
 }
 
 .grinfo-card.with-side-panel {
@@ -71,10 +72,10 @@
 
 .grinfo-graph-panel {
   background: #ffffff;
-  border: 1px solid #e3eefc;
+  border: 1px solid #d3e4f4;
   border-radius: 10px;
   padding: 8px;
-  box-shadow: 0 1px 2px rgba(34, 60, 80, 0.04);
+  box-shadow: 0 6px 16px rgba(3, 105, 161, 0.08);
   min-height: 220px;
 }
 
@@ -89,10 +90,10 @@
 
 .grinfo-scratchpad {
   background: #ffffff;
-  border: 1px solid #e3eefc;
+  border: 1px solid #d3e4f4;
   border-radius: 10px;
   padding: 10px;
-  box-shadow: 0 1px 2px rgba(34, 60, 80, 0.04);
+  box-shadow: 0 6px 16px rgba(3, 105, 161, 0.08);
 }
 
 .grinfo-scratchpad-toolbar {
@@ -103,10 +104,10 @@
 }
 
 .grinfo-scratchpad-btn {
-  border: 1px solid #c7d6f1;
+  border: 1px solid #b9d4ee;
   border-radius: 8px;
-  background: #f8fbff;
-  color: #193155;
+  background: #f4faff;
+  color: #0f2f4d;
   padding: 6px 10px;
   cursor: pointer;
   font-size: 12px;
@@ -114,9 +115,9 @@
 }
 
 .grinfo-scratchpad-btn.is-active {
-  background: #193155;
+  background: linear-gradient(135deg, #0284c7 0%, #075985 100%);
   color: #ffffff;
-  border-color: #193155;
+  border-color: #0284c7;
 }
 
 .grinfo-scratchpad-btn.clear {
@@ -131,14 +132,14 @@
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: #355074;
+  color: #2f4b6b;
 }
 
 .grinfo-scratchpad-hint {
   margin-top: 8px;
   margin-bottom: 8px;
   font-size: 12px;
-  color: #4f6482;
+  color: #4a607e;
 }
 
 .grinfo-scratchpad-canvas-wrap {
@@ -150,9 +151,9 @@
   width: 100%;
   height: auto;
   display: block;
-  border: 1px solid #d4e3ff;
+  border: 1px solid #c2dbf4;
   border-radius: 8px;
-  background: #ffffff;
+  background: #fbfdff;
 }
 
 .grinfo-scratchpad-canvas.cursor-draw {
@@ -187,16 +188,16 @@
   gap: 10px;
   margin-bottom: 10px;
   font-size: 12px;
-  color: #4f6482;
+  color: #3f5a79;
 }
 
 .grinfo-graph-data {
-  background: #f5f9ff;
-  border: 1px dashed #bfd6ff;
+  background: #eff8ff;
+  border: 1px dashed #9dcbef;
   border-radius: 10px;
   padding: 10px;
   margin: 14px 0;
-  color: #355074;
+  color: #2f4b6b;
   font-size: 13px;
 }
 
@@ -208,15 +209,18 @@
 
 .grinfo-option {
   text-align: left;
-  border: 1px solid #c7d6f1;
+  border: 1px solid #bdd4ea;
   border-radius: 10px;
-  background: #f9fbff;
+  background: #f8fbff;
   padding: 10px 12px;
   cursor: pointer;
+  transition: all 0.18s ease;
 }
 
 .grinfo-option:hover:enabled {
-  background: #edf4ff;
+  background: #eaf6ff;
+  border-color: #7dd3fc;
+  transform: translateY(-1px);
 }
 
 .grinfo-option.is-correct {
@@ -231,29 +235,32 @@
 
 .grinfo-explanation {
   margin-top: 14px;
-  border-top: 1px solid #dce7f8;
+  border-top: 1px solid #cfe0f0;
   padding-top: 12px;
 }
 
 .grinfo-btn {
   margin-top: 8px;
   border: none;
-  background: #193155;
+  background: linear-gradient(135deg, #0369a1 0%, #0c4a6e 100%);
   color: #fff;
   border-radius: 8px;
   padding: 10px 14px;
   cursor: pointer;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  box-shadow: 0 8px 20px rgba(3, 105, 161, 0.22);
 }
 
 .grinfo-wrong-list {
   margin-top: 16px;
-  border-top: 1px solid #dce7f8;
+  border-top: 1px solid #cfe0f0;
   padding-top: 12px;
 }
 
 .grinfo-wrong-list h3 {
   margin: 0 0 10px 0;
-  color: #193155;
+  color: #0f2f4d;
 }
 
 .grinfo-wrong-item {
@@ -267,12 +274,12 @@
 .grinfo-wrong-question {
   font-weight: 700;
   margin-bottom: 6px;
-  color: #223b60;
+  color: #173858;
 }
 
 .grinfo-wrong-answer {
   font-size: 14px;
-  color: #4f6482;
+  color: #3e5a78;
 }
 
 .grinfo-wrong-correct {
@@ -282,7 +289,7 @@
 
 .grinfo-ai-btn {
   margin-top: 12px;
-  background: #22407a;
+  background: linear-gradient(135deg, #0f3f66 0%, #155e75 100%);
 }
 
 .grinfo-ai-btn:disabled {
@@ -293,20 +300,20 @@
 .grinfo-ai-review {
   margin-top: 14px;
   padding: 14px;
-  border: 1px solid #dbe7fb;
+  border: 1px solid #c9ddf1;
   border-radius: 10px;
-  background: #f6f9ff;
+  background: #f2f9ff;
 }
 
 .grinfo-ai-review h3 {
   margin: 0 0 8px 0;
-  color: #1d3561;
+  color: #143754;
 }
 
 .grinfo-ai-review-text {
   white-space: pre-wrap;
   line-height: 1.6;
-  color: #2b466f;
+  color: #274567;
 }
 
 .grinfo-ai-review-text a {

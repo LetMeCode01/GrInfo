@@ -2,7 +2,8 @@ import React from "react";
 
 export default function Terms() {
   return (
-    <div>
+    <div className="terms-page">
+      <div className="terms-card">
       <h1>Termeni și condiții</h1>
       <p>
         Aceasta este pagina cu Termeni și Condiții. 
@@ -13,6 +14,7 @@ export default function Terms() {
         experienței utilizatorilor. Nu distribuim datele personale fără
         consimțământ expres.
       </p>
+      </div>
     </div>
   );
 }
