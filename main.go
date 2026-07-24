@@ -143,14 +143,6 @@ func initTables(db *sql.DB) error {
 		completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 	);
 
-	CREATE TABLE IF NOT EXISTS courses (
-		id BIGSERIAL PRIMARY KEY,
-		title TEXT NOT NULL,
-		type TEXT NOT NULL,
-		description TEXT,
-		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-	);
-
 	CREATE TABLE IF NOT EXISTS user_stats (
 		user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
 		total_xp INTEGER NOT NULL DEFAULT 0,
@@ -161,21 +153,6 @@ func initTables(db *sql.DB) error {
 		quizzes_completed INTEGER NOT NULL DEFAULT 0,
 		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 		updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-	);
-
-	CREATE TABLE IF NOT EXISTS lessons (
-		id TEXT PRIMARY KEY,
-		course_id BIGINT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-		title TEXT NOT NULL,
-		"order" INTEGER,
-		content TEXT
-	);
-
-	CREATE TABLE IF NOT EXISTS user_lessons (
-		user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-		lesson_id TEXT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
-		completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-		PRIMARY KEY (user_id, lesson_id)
 	);
 
 	CREATE TABLE IF NOT EXISTS newsletter_subscriptions (
@@ -196,8 +173,6 @@ func initTables(db *sql.DB) error {
 	CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 	CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 	CREATE INDEX IF NOT EXISTS idx_user_progress_user_id ON user_progress(user_id);
-	CREATE INDEX IF NOT EXISTS idx_courses_type ON courses(type);
-	CREATE INDEX IF NOT EXISTS idx_lessons_course_id ON lessons(course_id);
 	CREATE INDEX IF NOT EXISTS idx_newsletter_email ON newsletter_subscriptions(email);
 	CREATE INDEX IF NOT EXISTS idx_reviews_created_at ON reviews(created_at DESC);
 	`
@@ -356,77 +331,10 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func listCoursesByType(w http.ResponseWriter, courseType string) { // List courses of a specific type
-	rows, err := db.Query("SELECT id, title FROM courses WHERE type = $1", courseType)
-	if err != nil {
-		http.Error(w, "Database error", 500)
-		return
-	}
-	defer rows.Close()
-
-	fmt.Fprintf(w, "(%s) Cursuri:<br>", courseType)
-
-	for rows.Next() {
-		var id int
-		var title string
-		_ = rows.Scan(&id, &title)
-		fmt.Fprintf(w, "ID: %d — %s<br>", id, title)
-	}
-}
-
 // API models and handlers
-type Course struct {
-	ID    int    `json:"id"`
-	Title string `json:"title"`
-	Type  string `json:"type"`
-}
-
 type User struct {
 	ID       int    `json:"id"`
 	Username string `json:"username"`
-}
-
-type Lesson struct {
-	ID       string `json:"id"`
-	CourseID string `json:"courseId"`
-	Title    string `json:"title"`
-	Order    int    `json:"order"`
-	Content  string `json:"content"`
-}
-
-type CompletedLesson struct {
-	ID          string    `json:"id"`
-	CourseID    string    `json:"courseId"`
-	Title       string    `json:"title"`
-	CompletedAt time.Time `json:"completedAt"`
-}
-
-type CompletedLessonsByCourse struct {
-	CourseID int               `json:"courseId"`
-	Title    string            `json:"title"`
-	Lessons  []CompletedLesson `json:"lessons"`
-}
-
-func apiCoursesHandler(w http.ResponseWriter, r *http.Request) {
-	courseType := r.URL.Query().Get("type")
-	rows, err := db.Query("SELECT id, title, type FROM courses WHERE type = $1", courseType)
-	if err != nil {
-		http.Error(w, "Database error", http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
-
-	var courses []Course
-	for rows.Next() {
-		var c Course
-		if err := rows.Scan(&c.ID, &c.Title, &c.Type); err != nil {
-			http.Error(w, "Database error", http.StatusInternalServerError)
-			return
-		}
-		courses = append(courses, c)
-	}
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(courses)
 }
 
 func apiUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -980,189 +888,6 @@ func apiStatsHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(response)
 }
 
-// apiCourseHandler returns a single course by id, e.g. /api/course?id=123
-func apiCourseHandler(w http.ResponseWriter, r *http.Request) {
-	idStr := r.URL.Query().Get("id")
-	if idStr == "" {
-		idStr = strings.TrimPrefix(r.URL.Path, "/api/course/")
-	}
-	if idStr == "" {
-		http.Error(w, "Missing id", http.StatusBadRequest)
-		return
-	}
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		http.Error(w, "Invalid id", http.StatusBadRequest)
-		return
-	}
-	row := db.QueryRow("SELECT id, title, type FROM courses WHERE id = $1", id)
-	var c Course
-	if err := row.Scan(&c.ID, &c.Title, &c.Type); err != nil {
-		http.Error(w, "Course not found", http.StatusNotFound)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(c)
-}
-
-// apiLessonsHandler returns a list of lessons for a course (3-5 items)
-func apiLessonsHandler(w http.ResponseWriter, r *http.Request) {
-	courseID := r.URL.Query().Get("courseId")
-	if courseID == "" {
-		courseID = strings.TrimPrefix(r.URL.Path, "/api/lessons/")
-	}
-	if courseID == "" {
-		http.Error(w, "Missing courseId", http.StatusBadRequest)
-		return
-	}
-
-	rows, err := db.Query(`
-        SELECT id, course_id, title
-        FROM lessons
-        WHERE course_id = $1
-        ORDER BY id
-    `, courseID)
-	if err != nil {
-		http.Error(w, "Database error", http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
-
-	lessons := make([]Lesson, 0)
-	for rows.Next() {
-		var l Lesson
-		if err := rows.Scan(&l.ID, &l.CourseID, &l.Title); err != nil {
-			http.Error(w, "Database error", http.StatusInternalServerError)
-			return
-		}
-		lessons = append(lessons, l)
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(lessons)
-}
-
-// apiLessonHandler returns a single lesson by id and courseId
-func apiLessonHandler(w http.ResponseWriter, r *http.Request) {
-	courseID := r.URL.Query().Get("courseId")
-	lessonID := r.URL.Query().Get("lessonId")
-
-	if courseID == "" || lessonID == "" {
-		parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/lesson/"), "/")
-		if len(parts) >= 2 {
-			courseID = parts[0]
-			lessonID = parts[1]
-		}
-	}
-
-	if courseID == "" || lessonID == "" {
-		http.Error(w, "Missing courseId or lessonId", http.StatusBadRequest)
-		return
-	}
-
-	row := db.QueryRow(`
-        SELECT id, course_id, title
-        FROM lessons
-        WHERE course_id = $1 AND id = $2
-    `, courseID, lessonID)
-
-	var l Lesson
-	if err := row.Scan(&l.ID, &l.CourseID, &l.Title); err != nil {
-		http.Error(w, "Lesson not found", http.StatusNotFound)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(l)
-}
-
-func apiUserLessonsHandler(w http.ResponseWriter, r *http.Request) {
-	userIDStr := r.URL.Query().Get("userId")
-	if userIDStr == "" {
-		http.Error(w, "Missing userId", http.StatusBadRequest)
-		return
-	}
-
-	userID, err := strconv.Atoi(userIDStr)
-	if err != nil {
-		http.Error(w, "Invalid userId", http.StatusBadRequest)
-		return
-	}
-
-	rows, err := db.Query(`
-		SELECT
-			c.id AS course_id,
-			c.title AS course_title,
-			l.id AS lesson_id,
-			l.title AS lesson_title,
-			l.course_id AS lesson_course_id,
-			ul.completed_at
-		FROM user_lessons ul
-		JOIN lessons l ON l.id = ul.lesson_id
-		JOIN courses c ON c.id = l.course_id
-		WHERE ul.user_id = $1
-		ORDER BY c.id, l.id
-	`, userID)
-	if err != nil {
-		http.Error(w, "Database error", http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
-
-	result := []CompletedLessonsByCourse{}
-	currentCourseID := -1
-	currentCourseTitle := ""
-	currentLessons := []CompletedLesson{}
-
-	for rows.Next() {
-		var courseID int
-		var courseTitle string
-		var completed CompletedLesson
-		var completedAt time.Time
-
-		if err := rows.Scan(
-			&courseID,
-			&courseTitle,
-			&completed.ID,
-			&completed.Title,
-			&completed.CourseID,
-			&completedAt,
-		); err != nil {
-			http.Error(w, "Database error", http.StatusInternalServerError)
-			return
-		}
-
-		completed.CompletedAt = completedAt
-
-		if courseID != currentCourseID {
-			if currentCourseID != -1 {
-				result = append(result, CompletedLessonsByCourse{
-					CourseID: currentCourseID,
-					Title:    currentCourseTitle,
-					Lessons:  currentLessons,
-				})
-			}
-
-			currentCourseID = courseID
-			currentCourseTitle = courseTitle
-			currentLessons = []CompletedLesson{}
-		}
-
-		currentLessons = append(currentLessons, completed)
-	}
-
-	if currentCourseID != -1 {
-		result = append(result, CompletedLessonsByCourse{
-			CourseID: currentCourseID,
-			Title:    currentCourseTitle,
-			Lessons:  currentLessons,
-		})
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(result)
-}
-
 // POST /api/reviews - Create a new review
 func apiCreateReviewHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -1326,12 +1051,7 @@ func main() {
 	mux.HandleFunc("/api/progress", authMiddleware(apiSaveProgressHandler))
 	mux.HandleFunc("/api/stats", authMiddleware(apiStatsHandler))
 
-	mux.HandleFunc("/api/courses", apiCoursesHandler)
-	mux.HandleFunc("/api/course", apiCourseHandler)
-	mux.HandleFunc("/api/lessons", apiLessonsHandler)
-	mux.HandleFunc("/api/lesson", apiLessonHandler)
 	mux.HandleFunc("/api/user", apiUserHandler)
-	mux.HandleFunc("/api/userlessons", apiUserLessonsHandler)
 	mux.HandleFunc("/api/leaderboard", apiLeaderboardHandler)
 	mux.HandleFunc("/api/grinfo/questions", apiGrInfoQuestionsHandler)
 	mux.HandleFunc("/api/grinfo/categories", apiGrInfoCategoriesHandler)
