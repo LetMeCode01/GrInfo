@@ -8,6 +8,19 @@ Aplicația este construită pe o arhitectură de tip client-server, folosind **R
 
 ---
 
+## Demo și prezentare
+
+<p align="center">
+	<a href="./Demo%20platforma.mkv" target="_blank">
+		<img src="https://img.shields.io/badge/Demo%20platforma-Deschide-0F766E?style=for-the-badge&logo=vlcmediaplayer&logoColor=white" alt="Demo platforma" />
+	</a>
+	<a href="./Lucrare%20de%20licen%C8%9B%C4%83.pptx" target="_blank">
+		<img src="https://img.shields.io/badge/Prezentare%20platforma-Deschide-B91C1C?style=for-the-badge&logo=microsoftpowerpoint&logoColor=white" alt="Prezentare platforma" />
+	</a>
+</p>
+
+---
+
 ## Cerințe
 
 * Node.js (versiunea 18 sau mai nouă)
