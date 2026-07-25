@@ -1,13 +1,10 @@
 package main
 
 import (
-	"crypto/tls"
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
-	"net/smtp"
 	"os"
 	"strconv"
 	"strings"
@@ -48,23 +45,8 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-type ProgressRequest struct {
-	CourseID       string `json:"courseId"`
-	QuizScore      int    `json:"quizScore"`
-	TotalQuestions int    `json:"totalQuestions"`
-}
-
 type ErrorResponse struct {
 	Error string `json:"error"`
-}
-
-type SubscribeRequest struct {
-	Email string `json:"email"`
-}
-
-type SubscribeResponse struct {
-	Message string `json:"message"`
-	Email   string `json:"email"`
 }
 
 type ReviewRequest struct {
@@ -134,33 +116,6 @@ func initTables(db *sql.DB) error {
 		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 	);
 
-	CREATE TABLE IF NOT EXISTS user_progress (
-		id BIGSERIAL PRIMARY KEY,
-		user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-		course_id TEXT NOT NULL,
-		quiz_score INTEGER NOT NULL DEFAULT 0,
-		total_questions INTEGER NOT NULL DEFAULT 0,
-		completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-	);
-
-	CREATE TABLE IF NOT EXISTS user_stats (
-		user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-		total_xp INTEGER NOT NULL DEFAULT 0,
-		current_streak INTEGER NOT NULL DEFAULT 0,
-		longest_streak INTEGER NOT NULL DEFAULT 0,
-		last_activity_date DATE,
-		lessons_completed INTEGER NOT NULL DEFAULT 0,
-		quizzes_completed INTEGER NOT NULL DEFAULT 0,
-		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-		updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-	);
-
-	CREATE TABLE IF NOT EXISTS newsletter_subscriptions (
-		id BIGSERIAL PRIMARY KEY,
-		email TEXT UNIQUE NOT NULL,
-		subscribed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-	);
-
 	CREATE TABLE IF NOT EXISTS reviews (
 		id BIGSERIAL PRIMARY KEY,
 		user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
@@ -172,8 +127,6 @@ func initTables(db *sql.DB) error {
 
 	CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 	CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
-	CREATE INDEX IF NOT EXISTS idx_user_progress_user_id ON user_progress(user_id);
-	CREATE INDEX IF NOT EXISTS idx_newsletter_email ON newsletter_subscriptions(email);
 	CREATE INDEX IF NOT EXISTS idx_reviews_created_at ON reviews(created_at DESC);
 	`
 
@@ -361,167 +314,6 @@ func apiUserHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(u)
 }
 
-// Funcția pentru trimitere email
-func sendNewsletterEmail(toEmail string, subject string, body string) error {
-	smtpHost := os.Getenv("SMTP_HOST")
-	smtpPort := os.Getenv("SMTP_PORT")
-	senderEmail := os.Getenv("SENDER_EMAIL")
-	senderPassword := os.Getenv("SENDER_PASSWORD")
-
-	fmt.Printf("\nAttempting to send email...\n")
-	fmt.Printf("  To: %s\n", toEmail)
-	fmt.Printf("  From: %s\n", senderEmail)
-	fmt.Printf("  Host: %s:%s\n", smtpHost, smtpPort)
-
-	if smtpHost == "" || senderEmail == "" || senderPassword == "" {
-		fmt.Println("Email configuration incomplete:")
-		fmt.Printf("   - SMTP_HOST: %v\n", smtpHost != "")
-		fmt.Printf("   - SENDER_EMAIL: %v\n", senderEmail != "")
-		fmt.Printf("   - SENDER_PASSWORD: %v\n", senderPassword != "")
-		return fmt.Errorf("email not configured")
-	}
-
-	port := 587
-	if smtpPort != "" {
-		portNum, err := strconv.Atoi(smtpPort)
-		if err == nil {
-			port = portNum
-		}
-	}
-
-	addr := net.JoinHostPort(smtpHost, fmt.Sprintf("%d", port))
-	fmt.Printf("Connecting to %s...\n", addr)
-
-	conn, err := net.Dial("tcp", addr)
-	if err != nil {
-		fmt.Printf("TCP connection failed: %v\n", err)
-		return err
-	}
-	fmt.Println("TCP connection established")
-
-	// Create SMTP client
-	client, err := smtp.NewClient(conn, smtpHost)
-	if err != nil {
-		fmt.Printf("SMTP client creation failed: %v\n", err)
-		conn.Close()
-		return err
-	}
-	defer client.Close()
-
-	// Start TLS
-	fmt.Println("Starting TLS...")
-	tlsconfig := &tls.Config{
-		InsecureSkipVerify: false,
-		ServerName:         smtpHost,
-	}
-	if err := client.StartTLS(tlsconfig); err != nil {
-		fmt.Printf("StartTLS failed: %v\n", err)
-		return err
-	}
-	fmt.Println("TLS started")
-
-	// Authenticate
-	fmt.Println("Authenticating...")
-	auth := smtp.PlainAuth("", senderEmail, senderPassword, smtpHost)
-	if err := client.Auth(auth); err != nil {
-		fmt.Printf("Authentication failed: %v\n", err)
-		return err
-	}
-	fmt.Println("Authentication successful")
-
-	// Set sender
-	if err := client.Mail(senderEmail); err != nil {
-		fmt.Printf("Failed to set sender: %v\n", err)
-		return err
-	}
-
-	// Set recipient
-	if err := client.Rcpt(toEmail); err != nil {
-		fmt.Printf("Failed to set recipient: %v\n", err)
-		return err
-	}
-
-	// Send message
-	wc, err := client.Data()
-	if err != nil {
-		fmt.Printf("Failed to get write closer: %v\n", err)
-		return err
-	}
-
-	// Build email message
-	message := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nContent-Type: text/html; charset=\"UTF-8\"\r\n\r\n%s",
-		senderEmail, toEmail, subject, body)
-
-	if _, err := wc.Write([]byte(message)); err != nil {
-		fmt.Printf("Failed to write message: %v\n", err)
-		return err
-	}
-
-	if err := wc.Close(); err != nil {
-		fmt.Printf("Failed to close writer: %v\n", err)
-		return err
-	}
-
-	client.Quit()
-
-	fmt.Printf("✅ Email sent successfully to %s\n\n", toEmail)
-	return nil
-}
-
-// POST /api/subscribe - Subscribe to newsletter
-func apiSubscribeHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		jsonError(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	var req SubscribeRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		jsonError(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	if req.Email == "" {
-		jsonError(w, "Email is required", http.StatusBadRequest)
-		return
-	}
-
-	// Basic email validation
-	if !strings.Contains(req.Email, "@") {
-		jsonError(w, "Invalid email format", http.StatusBadRequest)
-		return
-	}
-
-	_, err := db.Exec(
-		"INSERT INTO newsletter_subscriptions (email) VALUES ($1)",
-		req.Email,
-	)
-	if err != nil {
-		if strings.Contains(err.Error(), "unique constraint") {
-			jsonError(w, "Email already subscribed", http.StatusConflict)
-			return
-		}
-		jsonError(w, "Failed to subscribe", http.StatusInternalServerError)
-		return
-	}
-
-	// Trimite email de bun venit
-	welcomeHTML := `
-	<h2>Bine ai venit pe GrInfo! 🎓</h2>
-	<p>Mulțumim pentru abonare! Vei primi actualizări cu quiz-uri si teste noi</p>
-	`
-	sendNewsletterEmail(req.Email, "Bine ai venit pe GrInfo!", welcomeHTML)
-
-	response := SubscribeResponse{
-		Message: "Te-ai abonat cu succes!",
-		Email:   req.Email,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	_ = json.NewEncoder(w).Encode(response)
-}
-
 // POST /api/register - Register new user
 func apiRegisterHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -634,254 +426,9 @@ func apiProfileHandler(w http.ResponseWriter, r *http.Request) {
 	userID, _ := strconv.Atoi(userIDStr)
 	username := r.Header.Get("X-Username")
 
-	rows, err := db.Query(`
-		SELECT course_id, quiz_score, total_questions, completed_at 
-		FROM user_progress 
-		WHERE user_id = $1 
-		ORDER BY completed_at DESC
-	`, userID)
-	if err != nil {
-		jsonError(w, "Database error", http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
-
-	type Progress struct {
-		CourseID       string `json:"courseId"`
-		QuizScore      int    `json:"quizScore"`
-		TotalQuestions int    `json:"totalQuestions"`
-		CompletedAt    string `json:"completedAt"`
-	}
-
-	var progress []Progress
-	for rows.Next() {
-		var p Progress
-		if err := rows.Scan(&p.CourseID, &p.QuizScore, &p.TotalQuestions, &p.CompletedAt); err != nil {
-			continue
-		}
-		progress = append(progress, p)
-	}
-
 	response := map[string]interface{}{
 		"userId":   userID,
 		"username": username,
-		"progress": progress,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(response)
-}
-
-// POST /api/progress - Save user quiz progress (protected route)
-func apiSaveProgressHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		jsonError(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	userIDStr := r.Header.Get("X-User-ID")
-	userID, _ := strconv.Atoi(userIDStr)
-
-	var req ProgressRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		fmt.Printf("Error decoding request body: %v\n", err)
-		jsonError(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	fmt.Printf("Received progress: UserID=%d, CourseID=%s, Score=%d/%d\n",
-		userID, req.CourseID, req.QuizScore, req.TotalQuestions)
-
-	tx, err := db.Begin()
-	if err != nil {
-		fmt.Printf("Database transaction error: %v\n", err)
-		jsonError(w, "Database error", http.StatusInternalServerError)
-		return
-	}
-	defer tx.Rollback()
-
-	_, err = tx.Exec(`
-		INSERT INTO user_progress (user_id, course_id, quiz_score, total_questions)
-		VALUES ($1, $2, $3, $4)
-	`, userID, req.CourseID, req.QuizScore, req.TotalQuestions)
-	if err != nil {
-		fmt.Printf("Failed to insert progress: %v\n", err)
-		jsonError(w, "Failed to save progress", http.StatusInternalServerError)
-		return
-	}
-
-	xpEarned := req.QuizScore * 10
-
-	err = updateUserStats(tx, userID, xpEarned)
-	if err != nil {
-		fmt.Printf("Failed to update stats: %v\n", err)
-		jsonError(w, "Failed to update stats", http.StatusInternalServerError)
-		return
-	}
-
-	if err = tx.Commit(); err != nil {
-		fmt.Printf("Failed to commit transaction: %v\n", err)
-		jsonError(w, "Failed to save progress", http.StatusInternalServerError)
-		return
-	}
-
-	fmt.Printf("Progress saved successfully! User %d earned %d XP\n", userID, xpEarned)
-
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"status":   "success",
-		"xpEarned": xpEarned,
-	})
-}
-
-// updateUserStats updates the user's XP and streak
-func updateUserStats(tx *sql.Tx, userID int, xpEarned int) error {
-	var totalXP, currentStreak, longestStreak, quizzesCompleted int
-	var lastActivityDate sql.NullString
-
-	err := tx.QueryRow(`
-		SELECT total_xp, current_streak, longest_streak, last_activity_date, quizzes_completed
-		FROM user_stats WHERE user_id = $1
-	`, userID).Scan(&totalXP, &currentStreak, &longestStreak, &lastActivityDate, &quizzesCompleted)
-
-	today := time.Now().Format("2006-01-02")
-	newStreak := currentStreak
-
-	if err == sql.ErrNoRows {
-		_, err = tx.Exec(`
-			INSERT INTO user_stats (user_id, total_xp, current_streak, longest_streak, last_activity_date, quizzes_completed)
-			VALUES ($1, $2, 1, 1, $3, 1)
-		`, userID, xpEarned, today)
-		return err
-	} else if err != nil {
-		return err
-	}
-
-	if lastActivityDate.Valid {
-		lastDate, _ := time.Parse("2006-01-02", lastActivityDate.String)
-		todayDate, _ := time.Parse("2006-01-02", today)
-		daysDiff := int(todayDate.Sub(lastDate).Hours() / 24)
-
-		if daysDiff == 0 {
-			newStreak = currentStreak
-		} else if daysDiff == 1 {
-			newStreak = currentStreak + 1
-		} else {
-			newStreak = 1
-		}
-	} else {
-		newStreak = 1
-	}
-
-	newLongestStreak := longestStreak
-	if newStreak > longestStreak {
-		newLongestStreak = newStreak
-	}
-
-	_, err = tx.Exec(`
-		UPDATE user_stats 
-		SET total_xp = $1, 
-		    current_streak = $2, 
-		    longest_streak = $3,
-		    last_activity_date = $4,
-		    quizzes_completed = $5,
-		    updated_at = NOW()
-		WHERE user_id = $6
-	`, totalXP+xpEarned, newStreak, newLongestStreak, today, quizzesCompleted+1, userID)
-
-	return err
-}
-
-// GET /api/stats - Get user statistics (protected route)
-func apiStatsHandler(w http.ResponseWriter, r *http.Request) {
-	userIDStr := r.Header.Get("X-User-ID")
-	userID, _ := strconv.Atoi(userIDStr)
-
-	_, err := db.Exec(`
-		INSERT INTO user_stats (user_id, total_xp, current_streak, longest_streak, quizzes_completed)
-		VALUES ($1, 0, 0, 0, 0)
-		ON CONFLICT (user_id) DO NOTHING
-	`, userID)
-	if err != nil {
-		jsonError(w, "Database error", http.StatusInternalServerError)
-		return
-	}
-
-	var stats struct {
-		TotalXP          int    `json:"totalXp"`
-		CurrentStreak    int    `json:"currentStreak"`
-		LongestStreak    int    `json:"longestStreak"`
-		LastActivityDate string `json:"lastActivityDate"`
-		QuizzesCompleted int    `json:"quizzesCompleted"`
-		LessonsCompleted int    `json:"lessonsCompleted"`
-	}
-
-	var lastActivityDate sql.NullString
-	err = db.QueryRow(`
-		SELECT total_xp, current_streak, longest_streak, last_activity_date, quizzes_completed, lessons_completed
-		FROM user_stats WHERE user_id = $1
-	`, userID).Scan(&stats.TotalXP, &stats.CurrentStreak, &stats.LongestStreak, &lastActivityDate, &stats.QuizzesCompleted, &stats.LessonsCompleted)
-	if err != nil {
-		jsonError(w, "Failed to fetch stats", http.StatusInternalServerError)
-		return
-	}
-	if lastActivityDate.Valid {
-		stats.LastActivityDate = lastActivityDate.String
-	}
-
-	weeklyXP := []int{0, 0, 0, 0, 0, 0, 0}
-	rows, err := db.Query(`
-		SELECT DATE(completed_at) as date, SUM(quiz_score * 10) as xp
-		FROM user_progress
-		WHERE user_id = $1 AND completed_at >= (CURRENT_DATE - INTERVAL '7 days')
-		GROUP BY DATE(completed_at)
-		ORDER BY date
-	`, userID)
-	if err == nil {
-		defer rows.Close()
-		now := time.Now()
-		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-
-		// Calculate Monday of current week
-		// time.Weekday: Sunday=0, Monday=1, ..., Saturday=6
-		weekday := int(today.Weekday())
-		if weekday == 0 { // Sunday
-			weekday = 7 // Treat Sunday as day 7
-		}
-		daysFromMonday := weekday - 1 // Monday = 0, Tuesday = 1, ..., Sunday = 6
-		startOfWeek := today.AddDate(0, 0, -daysFromMonday)
-
-		for rows.Next() {
-			var dateStr string
-			var xp int
-			if err := rows.Scan(&dateStr, &xp); err == nil {
-				// Parse date string (format: 2026-01-29 or 2026-01-29T00:00:00Z)
-				completedDate, parseErr := time.Parse("2006-01-02", dateStr[:10])
-				if parseErr != nil {
-					fmt.Printf("Error parsing date %s: %v\n", dateStr, parseErr)
-					continue
-				}
-
-				// Calculate days difference from Monday
-				daysDiff := int(completedDate.Sub(startOfWeek).Hours() / 24)
-				fmt.Printf("Date: %s, XP: %d, Weekday: %d, StartOfWeek (Mon): %s, DaysDiff: %d\n",
-					dateStr, xp, weekday, startOfWeek.Format("2006-01-02"), daysDiff)
-
-				if daysDiff >= 0 && daysDiff < 7 {
-					weeklyXP[daysDiff] = xp
-					fmt.Printf("Mapped to weeklyXP[%d] = %d (Day: %s)\n", daysDiff, xp,
-						[]string{"Lun", "Mar", "Mie", "Joi", "Vin", "Sâm", "Dum"}[daysDiff])
-				}
-			}
-		}
-		fmt.Printf("Final weeklyXP: %v\n", weeklyXP)
-	} else {
-		fmt.Printf("Error querying weekly XP: %v\n", err)
-	}
-
-	response := map[string]interface{}{
-		"stats":    stats,
-		"weeklyXP": weeklyXP,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -1017,19 +564,6 @@ func main() {
 		fmt.Println("⚠️ Could not load .env file, using system environment variables")
 	}
 
-	// DEBUG: Verifică dacă variabilele de mediu sunt încărcate
-	fmt.Println("\n=== EMAIL CONFIGURATION DEBUG ===")
-	smtpHost := os.Getenv("SMTP_HOST")
-	smtpPort := os.Getenv("SMTP_PORT")
-	senderEmail := os.Getenv("SENDER_EMAIL")
-	senderPassword := os.Getenv("SENDER_PASSWORD")
-
-	fmt.Printf("SMTP_HOST: %s\n", smtpHost)
-	fmt.Printf("SMTP_PORT: %s\n", smtpPort)
-	fmt.Printf("SENDER_EMAIL: %s\n", senderEmail)
-	fmt.Printf("SENDER_PASSWORD: [%d chars]\n", len(senderPassword))
-	fmt.Println("================================")
-
 	var dbErr error
 	db, dbErr = initDB()
 	if dbErr != nil {
@@ -1044,12 +578,9 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/api/subscribe", apiSubscribeHandler)
 	mux.HandleFunc("/api/register", apiRegisterHandler)
 	mux.HandleFunc("/api/login", apiLoginHandler)
 	mux.HandleFunc("/api/profile", authMiddleware(apiProfileHandler))
-	mux.HandleFunc("/api/progress", authMiddleware(apiSaveProgressHandler))
-	mux.HandleFunc("/api/stats", authMiddleware(apiStatsHandler))
 
 	mux.HandleFunc("/api/user", apiUserHandler)
 	mux.HandleFunc("/api/leaderboard", apiLeaderboardHandler)
