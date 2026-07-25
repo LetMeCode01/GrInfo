@@ -193,6 +193,7 @@ export default function Profile() {
                 <div className="stat-icon">♟️</div>
                 <div className="stat-value">{Number(grInfoProfile.currentElo || 1000).toFixed(1)}</div>
                 <div className="stat-label">ELO curent GrInfo</div>
+                <div className="stat-sublabel" style={{ color: "#fff" }}>Nivelul curent de cunoaștere</div>
           
               </div>
 

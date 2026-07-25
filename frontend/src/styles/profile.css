@@ -165,6 +165,10 @@
   line-height: 1;
 }
 
+.stat-card.level .stat-value {
+  font-size: 54px;
+}
+
 .stat-value-compact {
   font-size: 24px;
   display: flex;

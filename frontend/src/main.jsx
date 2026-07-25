@@ -4,7 +4,6 @@ import App from "./App";
 import "./assets/main.css";
 import "./assets/enhanced-styles.css";
 import "./assets/header-styles.css";
-import "./assets/utility-styles.css";
 import "./styles/roadmap.css";
 import "./assets/graph-studio-overrides.css";
 

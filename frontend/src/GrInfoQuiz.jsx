@@ -840,7 +840,7 @@ export default function GrInfoQuiz() {
                 onClick={handleAiAnalysis}
                 disabled={aiReviewLoading}
               >
-                {aiReviewLoading ? "Analiza AI se genereaza..." : "Analiza AI"}
+                {aiReviewLoading ? "Analiza AI se generează..." : "Analiza AI"}
               </button>
 
               {aiReviewError && <div className="grinfo-alert grinfo-ai-error">{aiReviewError}</div>}
