@@ -413,10 +413,8 @@ func insertGeneratedQuestions(db *sql.DB, categoryID int, category string, fromI
 			}
 		}
 	}
-
 	return nil
 }
-
 func repairGrInfoQuestionOptions(db *sql.DB) error {
 	rows, err := db.Query(`
 		SELECT q.id, c.slug
@@ -465,7 +463,6 @@ func repairGrInfoQuestionOptions(db *sql.DB) error {
 			}
 		}
 	}
-
 	return rows.Err()
 }
 
