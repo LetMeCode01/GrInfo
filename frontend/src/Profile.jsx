@@ -190,21 +190,21 @@ export default function Profile() {
 
             <div className="stats-grid" style={{ marginTop: 12 }}>
               <div className="stat-card level">
-                <div className="stat-icon">📈</div>
+                <div className="stat-icon">♟️</div>
                 <div className="stat-value">{Number(grInfoProfile.currentElo || 1000).toFixed(1)}</div>
                 <div className="stat-label">ELO curent GrInfo</div>
           
               </div>
 
               <div className="stat-card quizzes">
-                <div className="stat-icon">🧪</div>
+                <div className="stat-icon">👨‍🎓</div>
                 <div className="stat-value">{grInfoProfile.totalSessions || 0}</div>
                 <div className="stat-label">Sesiuni GrInfo</div>
                 <div className="stat-sublabel">Quiz-uri finalizate</div>
               </div>
 
               <div className="stat-card streak">
-                <div className="stat-icon">✅</div>
+                <div className="stat-icon">👏</div>
                 <div className="stat-value stat-value-compact">
                   <span className="stat-value-line">{grInfoProfile.totalCorrectAnswers || 0} /</span>
                   <span className="stat-value-line">{grInfoProfile.totalQuestionsAnswered || 0}</span>
@@ -214,7 +214,7 @@ export default function Profile() {
               </div>
 
               <div className="stat-card xp">
-                <div className="stat-icon">🎯</div>
+                <div className="stat-icon">💯</div>
                 <div className="stat-value">{Number(grInfoProfile.accuracy || 0).toFixed(1)}%</div>
                 <div className="stat-label">Acuratețe GrInfo</div>
                 <div className="stat-sublabel">Bazată pe răspunsuri corecte</div>

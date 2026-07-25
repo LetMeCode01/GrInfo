@@ -12,4 +12,3 @@ const container = document.getElementById("root");
 const root = createRoot(container);
 root.render(<App />);
 
-// Aici avem codul pentru a porni aplicația React în containerul HTML cu id "root".

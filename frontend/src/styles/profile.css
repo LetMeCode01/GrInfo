@@ -74,7 +74,7 @@
   font-weight: 800;
   color: #0f2f4d;
   margin: 0 0 8px 0;
-  background: none;
+  background-clip: initial;
   -webkit-background-clip: initial;
   -webkit-text-fill-color: #075985;
 }
@@ -84,6 +84,7 @@
   font-size: 15px;
   margin: 0;
   font-weight: 500;
+  margin-left: 60px;
 }
 
 .wave-emoji {
@@ -146,10 +147,10 @@
 .stat-card:nth-child(3) { animation-delay: 0.3s; }
 .stat-card:nth-child(4) { animation-delay: 0.4s; }
 
-.stat-card.streak { background: linear-gradient(135deg, #FFA726 0%, #FF7043 100%); }
+.stat-card.streak { background: linear-gradient(135deg, #FFA726 0%, #ed3d08 100%); }
 .stat-card.xp { background: linear-gradient(135deg, #14b8a6 0%, #0f766e 100%); }
 .stat-card.quizzes { background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); }
-.stat-card.level { background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%); }
+.stat-card.level { background: linear-gradient(135deg, #b8caf1 0%, #8b98bc 100%); }
 
 .stat-icon {
   font-size: 42px;
@@ -188,17 +189,6 @@
   opacity: 0.8;
   margin-top: 6px;
   font-weight: 500;
-}
-
-/* Weekly Chart Section */
-.chart-section {
-  background: #ffffff;
-  padding: 32px;
-  border-radius: 24px;
-  border: 1px solid #c9ddf1;
-  box-shadow: 0 12px 30px rgba(3, 105, 161, 0.12);
-  margin-bottom: 32px;
-  animation: slideUp 0.6s ease-out 0.3s backwards;
 }
 
 .section-title {

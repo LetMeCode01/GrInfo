@@ -299,7 +299,15 @@ header {
   color: #12385f;
 }
 
+.featured-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
 .featured-card {
+  min-width: 0;
   background: linear-gradient(165deg, #ffffff 0%, #f2f9ff 100%);
   border: 1px solid #c8dff5;
   box-shadow: 0 8px 22px rgba(10, 62, 122, 0.1);
@@ -307,6 +315,26 @@ header {
 
 .featured-card strong {
   color: #0f3153;
+}
+
+.elo-chart-title {
+  padding-bottom: 0;
+}
+
+.elo-chart-title::after {
+  content: none;
+  display: none;
+}
+
+.featured-section h3,
+.reviews-section h3 {
+  padding-bottom: 0;
+}
+
+.featured-section h3::after,
+.reviews-section h3::after {
+  content: none;
+  display: none;
 }
 
 .reviews-section,
@@ -336,6 +364,23 @@ header {
 .review-name-field label,
 .author-name {
   color: #12385f;
+}
+
+.profile-page .profile-title h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-page .profile-title .wave-emoji {
+  width: 72px;
+  flex: 0 0 72px;
+  text-align: center;
+  margin-right: 0;
+}
+
+.profile-page .profile-title p {
+  margin-left: 60px;
 }
 
 .review-form-container {
@@ -816,9 +861,24 @@ header {
   }
 }
 
+@media (max-width: 900px) {
+  .featured-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 680px) {
   .nav-subjects {
     flex-wrap: wrap;
+  }
+
+  .profile-page .profile-title p {
+    margin-left: 0;
+  }
+
+  .profile-page .profile-title .wave-emoji {
+    width: auto;
+    flex: 0 0 auto;
   }
 
   .auth-card {

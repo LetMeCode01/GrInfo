@@ -807,7 +807,7 @@ export default function GrInfoQuiz() {
         <div className="grinfo-chip">
           {selectedDifficultyChoice === "toate"
             ? `Dificultate țintă: ${targetDifficulty}`
-            : `Dificultate FIXATA: ${selectedDifficultyChoice}`}
+            : `Dificultate fixată: ${selectedDifficultyChoice}`}
         </div>
         <div className="grinfo-chip">Întrebări: {Math.min(answeredCount + (showExplanation ? 0 : 1), 10)}/10</div>
       </div>

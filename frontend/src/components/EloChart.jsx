@@ -26,7 +26,7 @@ export default function EloChart({ matchesData = [] }) {
       }));
   }, [matchesData]);
 
-  // Keep requested behavior: component reverses natural DB order for chart left->right.
+  //component reverses natural DB order for chart left->right
   const chronologicalData = useMemo(() => [...normalizedData].reverse(), [normalizedData]);
 
   const filteredData = useMemo(() => {
@@ -117,7 +117,7 @@ export default function EloChart({ matchesData = [] }) {
           flexWrap: "wrap",
         }}
       >
-        <h3 style={{ margin: 0, color: "#333" }}>Progresul tau ELO</h3>
+        <h3 className="elo-chart-title" style={{ margin: 0, color: "#333" }}>Progresul tău ELO</h3>
 
         <div>
           <button

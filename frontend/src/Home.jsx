@@ -2,8 +2,6 @@ import { Link } from "react-router-dom";
 import { useState } from "react";
 
 export default function Home() {
-  const [email, setEmail] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [reviewName, setReviewName] = useState("");
   const [reviewContent, setReviewContent] = useState("");
   const [reviewRating, setReviewRating] = useState(0);
@@ -28,40 +26,6 @@ export default function Home() {
     `;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 4000);
-  };
-
-  const handleSubscribe = async (e) => {
-    e.preventDefault();
-
-    if (!email) {
-      showToast("Introduceți o adresă de email", "error");
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const response = await fetch("http://localhost:8000/api/subscribe", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        showToast(data.message, "success");
-        setEmail("");
-      } else {
-        showToast(data.error || "Eroare la abonare", "error");
-      }
-    } catch (error) {
-      showToast("Eroare de conexiune: " + error.message, "error");
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleSubmitReview = async (e) => {
@@ -130,41 +94,13 @@ export default function Home() {
         <h1 className="home-title">GrInfo</h1>
       </header>
 
-      {/* <div className="home-search-wrap">
-        <form className="home-search" onSubmit={(e) => e.preventDefault()}>
-          <input
-            aria-label="Caută lecții, subiecte sau cursuri"
-            className="search-input"
-            placeholder="Caută: ex. integrale, eseu, recursivitate..."
-          />
-          <button className="search-btn" type="submit">
-            Caută
-          </button>
-        </form>
-
-        <div className="quick-links" aria-hidden>
-          <a className="quick-link" href="/courses?type=r">
-            Toate cursurile
-          </a>
-          <a className="quick-link" href="/courses?type=r">
-            Română
-          </a>
-          <a className="quick-link" href="/courses?type=m">
-            Matematică
-          </a>
-          <a className="quick-link" href="/courses?type=i">
-            Informatică
-          </a>
-        </div>
-      </div> */}
-
       <section className="site-intro">
         <span className="intro-badge">Bun venit!</span>
         <h2 className="intro-title">Platformă demo pentru Grafuri</h2>
         <p className="intro-text">
-          GrInfo este viitorul pentru invatarea de Algoritmi si structuri de date, axat momentan pe quizuri de grafuri
-          orientate și neorientate. Include selecție adaptivă pe baza algoritmului
-          ELO, întrebare unică pe pagină și monitorizare anti-cheat.
+          GrInfo este viitorul pentru învățarea de Algoritmi și structuri de date, axat momentan pe quizuri de grafuri
+          orientate și neorientate. Quiz-urile includ selecție adaptivă pe baza algoritmului ELO, 
+          întrebare unică pe pagină și monitorizare anti-cheat.
         </p>
       </section>
 
@@ -173,7 +109,7 @@ export default function Home() {
           <div className="subject-card">
             <div className="subject-head">
               <span className="subject-icon" aria-hidden>
-                📊
+                🎢
               </span>
               <h4>Grafuri neorientate</h4>
             </div>
@@ -204,7 +140,7 @@ export default function Home() {
               <h4>Quiz adaptiv ELO</h4>
             </div>
             <p>
-              După fiecare răspuns se recalculează ELO și se alege următoarea
+              După fiecare răspuns, se recalculează ELO și se alege următoarea
               întrebare necompletată cu dificultatea cea mai apropiată.
             </p>
           </div>
@@ -293,5 +229,3 @@ export default function Home() {
     </div>
   );
 }
-
-// Este componenta principală a paginii de start care afișează un titlu și un paragraf introductiv.
