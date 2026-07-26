@@ -609,11 +609,6 @@ header {
   }
 }
 
-.home-note {
-  margin-top: 30px;
-  color: #64748b;
-}
-
 @media (max-width: 720px) {
   .home-title {
     font-size: 22px;
