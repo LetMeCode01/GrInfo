@@ -532,77 +532,6 @@ header {
 .subject-card:hover::after {
   opacity: 1;
 }
-.testimonials-section {
-  margin-top: 18px;
-  margin-bottom: 36px;
-}
-.testimonials-grid {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-top: 12px;
-}
-.testimonial-card {
-  background: #fff;
-  border: 1px solid rgba(15, 23, 36, 0.06);
-  padding: 14px;
-  border-radius: 10px;
-  max-width: 360px;
-  box-shadow: 0 8px 20px rgba(15, 23, 36, 0.03);
-}
-.testimonial-card blockquote {
-  margin: 0 0 8px 0;
-  color: #0f1724;
-  line-height: 1.45;
-}
-.testimonial-card figcaption {
-  font-size: 13px;
-  color: #475569;
-}
-.testimonial-meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 8px;
-}
-.testimonial-meta .avatar {
-  width: 44px;
-  height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #e6f2ff, #cfe8ff);
-  color: #0b3b6f;
-  border-radius: 999px;
-  font-weight: 700;
-  box-shadow: 0 6px 18px rgba(15, 23, 36, 0.04);
-}
-.meta-text .meta-name {
-  font-weight: 700;
-  color: #0b3b6f;
-}
-.meta-text .meta-location {
-  font-size: 13px;
-  color: #64748b;
-}
-.rating {
-  margin-left: auto;
-  color: #f59e0b;
-  font-weight: 800;
-}
-.testimonial-card {
-  position: relative;
-  overflow: visible;
-}
-.testimonial-card::before {
-  content: "“";
-  position: absolute;
-  top: 10px;
-  left: 12px;
-  font-size: 48px;
-  color: rgba(11, 59, 111, 0.06);
-  font-family: serif;
-}
 .home-ctas {
   display: flex;
   gap: 12px;
@@ -689,9 +618,6 @@ header {
   .home-title {
     font-size: 22px;
   }
-  .testimonials-grid {
-    justify-content: center;
-  }
   .home-ctas {
     justify-content: center;
   }
@@ -700,15 +626,4 @@ header {
 /* add extra gap before footer */
 .site-footer {
   margin-top: 48px;
-}
-
-/* Course description (specific pages) */
-.course-description {
-  background: linear-gradient(180deg, #fffaf9, #fff8f7);
-  border: 1px solid rgba(220, 38, 38, 0.06);
-  padding: 12px 14px;
-  border-radius: 8px;
-  color: #334155;
-  line-height: 1.6;
-  max-width: 860px;
 }
