@@ -16,16 +16,69 @@ const EMPTY_FORM = {
 
 export default function Admin() {
   const navigate = useNavigate();
+  const initialParams = new URLSearchParams(window.location.search);
+  const initialPageFromUrl = (() => {
+    const p = Number(initialParams.get("page") || "1");
+    return Number.isFinite(p) && p > 0 ? Math.trunc(p) : 1;
+  })();
+  const initialCategoryFromUrl = initialParams.get("category") || "all";
+  const initialIncludeInactiveFromUrl = initialParams.get("includeInactive") === "1";
+
   const [questions, setQuestions] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [page, setPage] = useState(initialPageFromUrl);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [pageInput, setPageInput] = useState(String(initialPageFromUrl));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [filterCategory, setFilterCategory] = useState("all");
-  const [includeInactive, setIncludeInactive] = useState(true);
+  const [filterCategory, setFilterCategory] = useState(initialCategoryFromUrl);
+  const [includeInactive, setIncludeInactive] = useState(initialIncludeInactiveFromUrl);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [eloInput, setEloInput] = useState(String(EMPTY_FORM.eloRating));
+
+  const syncStateToUrl = (nextPage, nextCategory, nextIncludeInactive) => {
+    const params = new URLSearchParams(window.location.search);
+    params.set("page", String(nextPage));
+    params.set("category", nextCategory || "all");
+    if (nextIncludeInactive) {
+      params.set("includeInactive", "1");
+    } else {
+      params.delete("includeInactive");
+    }
+    window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
+  };
+
+  const applyPaginationFromResponse = (payload, requestedPage = 1) => {
+    const rawQuestions = Array.isArray(payload?.questions) ? payload.questions : [];
+    const serverHasMeta = Number.isFinite(Number(payload?.totalPages));
+
+    if (serverHasMeta) {
+      const nextPage = Number(payload.page) || 1;
+      setQuestions(rawQuestions);
+      setPage(nextPage);
+      setTotalPages(Number(payload.totalPages) || 1);
+      setTotalCount(Number(payload.totalCount) || rawQuestions.length);
+      setPageInput(String(nextPage));
+      return;
+    }
+
+    // Fallback: if backend is not restarted yet, paginate locally in UI (10/page).
+    const fallbackPageSize = 10;
+    const fallbackTotalCount = rawQuestions.length;
+    const fallbackTotalPages = Math.max(1, Math.ceil(fallbackTotalCount / fallbackPageSize));
+    const safePage = Math.min(Math.max(1, requestedPage), fallbackTotalPages);
+    const start = (safePage - 1) * fallbackPageSize;
+
+    setQuestions(rawQuestions.slice(start, start + fallbackPageSize));
+    setPage(safePage);
+    setTotalPages(fallbackTotalPages);
+    setTotalCount(fallbackTotalCount);
+    setPageInput(String(safePage));
+  };
 
   const authHeaders = useMemo(() => {
     const token = localStorage.getItem("token");
@@ -48,7 +101,7 @@ export default function Admin() {
       try {
         const [catsRes, qRes] = await Promise.all([
           fetch("/api/grinfo/categories"),
-          fetch("/api/grinfo/admin/questions?includeInactive=1", {
+          fetch(`/api/grinfo/admin/questions?category=${encodeURIComponent(initialCategoryFromUrl)}${initialIncludeInactiveFromUrl ? "&includeInactive=1" : ""}&page=${initialPageFromUrl}`, {
             headers: authHeaders,
           }),
         ]);
@@ -71,7 +124,7 @@ export default function Admin() {
         const catsData = await catsRes.json();
         const qData = await qRes.json();
         setCategories(Array.isArray(catsData.categories) ? catsData.categories : []);
-        setQuestions(Array.isArray(qData.questions) ? qData.questions : []);
+        applyPaginationFromResponse(qData, initialPageFromUrl);
       } catch (e) {
         setError(e.message || "Eroare la încărcarea datelor");
       } finally {
@@ -80,14 +133,15 @@ export default function Admin() {
     };
 
     load();
-  }, [authHeaders, navigate]);
+  }, [authHeaders, navigate, initialCategoryFromUrl, initialIncludeInactiveFromUrl, initialPageFromUrl]);
 
-  const loadQuestions = async (category = filterCategory, include = includeInactive) => {
+  const loadQuestions = async (category = filterCategory, include = includeInactive, targetPage = page) => {
     setLoading(true);
     setError("");
 
     const params = new URLSearchParams();
     params.set("category", category);
+    params.set("page", String(targetPage));
     if (include) {
       params.set("includeInactive", "1");
     }
@@ -103,7 +157,9 @@ export default function Admin() {
         throw new Error("Nu am putut încărca întrebările");
       }
       const data = await res.json();
-      setQuestions(Array.isArray(data.questions) ? data.questions : []);
+      applyPaginationFromResponse(data, targetPage);
+      const resolvedPage = Number(data?.page) || targetPage;
+      syncStateToUrl(resolvedPage, category, include);
     } catch (e) {
       setError(e.message || "Eroare la încărcare");
     } finally {
@@ -120,6 +176,7 @@ export default function Admin() {
   const resetForm = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setEloInput(String(EMPTY_FORM.eloRating));
     setMessage("");
     setError("");
   };
@@ -139,6 +196,17 @@ export default function Admin() {
       raspunsCorect: Number.isInteger(question.raspunsCorect) ? question.raspunsCorect : 0,
       isActive: Boolean(question.isActive),
     });
+    setEloInput(String(question.eloRating ?? 1000));
+  };
+
+  const normalizeEloInput = () => {
+    const parsed = Number(eloInput);
+    if (!Number.isFinite(parsed)) {
+      return;
+    }
+    const normalized = Math.min(1900, Math.max(900, Math.trunc(parsed)));
+    setEloInput(String(normalized));
+    setForm((prev) => ({ ...prev, eloRating: normalized }));
   };
 
   const onSubmit = async (e) => {
@@ -146,6 +214,18 @@ export default function Admin() {
     setSaving(true);
     setMessage("");
     setError("");
+
+    const parsedElo = Number(eloInput);
+    if (!Number.isFinite(parsedElo) || parsedElo < 900 || parsedElo > 1900) {
+      setError("ELO trebuie să fie între 900 și 1900.");
+      setSaving(false);
+      return;
+    }
+
+    const payload = {
+      ...form,
+      eloRating: Math.trunc(parsedElo),
+    };
 
     const endpoint = editingId
       ? `/api/grinfo/admin/questions?id=${editingId}`
@@ -156,7 +236,7 @@ export default function Admin() {
       const res = await fetch(endpoint, {
         method,
         headers: authHeaders,
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -305,11 +385,11 @@ export default function Admin() {
               ELO
               <input
                 type="number"
-                min="1"
-                value={form.eloRating}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, eloRating: Number(e.target.value || 0) }))
-                }
+                min="900"
+                max="1900"
+                value={eloInput}
+                onChange={(e) => setEloInput(e.target.value)}
+                onBlur={normalizeEloInput}
               />
             </label>
 
@@ -396,7 +476,35 @@ export default function Admin() {
         </form>
 
         <div className="admin-list">
-          <h2>Întrebări ({questions.length})</h2>
+          <div className="admin-list-header">
+            <h2>Întrebări ({totalCount})</h2>
+            <div className="admin-jump-inline">
+              <label htmlFor="admin-page-jump">Pagina</label>
+              <input
+                id="admin-page-jump"
+                type="number"
+                min="1"
+                max={totalPages}
+                value={pageInput}
+                onChange={(e) => setPageInput(e.target.value)}
+              />
+              <button
+                type="button"
+                className="admin-btn"
+                disabled={loading}
+                onClick={() => {
+                  const parsed = Number(pageInput);
+                  const target = Number.isFinite(parsed)
+                    ? Math.min(Math.max(1, Math.trunc(parsed)), totalPages)
+                    : 1;
+                  loadQuestions(filterCategory, includeInactive, target);
+                }}
+              >
+                Mergi
+              </button>
+              <span className="admin-page-meta">{page} / {totalPages}</span>
+            </div>
+          </div>
           {loading ? (
             <p>Se încarcă...</p>
           ) : questions.length === 0 ? (

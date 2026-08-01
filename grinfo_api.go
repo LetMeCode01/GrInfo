@@ -659,8 +659,8 @@ func parseGrInfoAdminQuestionRequest(r *http.Request) (*GrInfoAdminQuestionReque
 	if req.Dificultate != "usoara" && req.Dificultate != "medie" && req.Dificultate != "grea" {
 		return nil, "Dificultatea trebuie sa fie usoara, medie sau grea"
 	}
-	if req.EloRating <= 0 {
-		return nil, "ELO trebuie sa fie mai mare ca 0"
+	if req.EloRating < 900 || req.EloRating > 1900 {
+		return nil, "ELO trebuie sa fie intre 900 si 1900"
 	}
 	if req.Enunt == "" || req.ExplicatieRaspuns == "" {
 		return nil, "Enuntul si explicatia sunt obligatorii"
@@ -695,35 +695,60 @@ func apiGrInfoAdminQuestionsHandler(w http.ResponseWriter, r *http.Request) {
 			category = "all"
 		}
 		includeInactive := r.URL.Query().Get("includeInactive") == "1"
-		limit := 200
-		if l := r.URL.Query().Get("limit"); l != "" {
-			if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 500 {
-				limit = parsed
+
+		page := 1
+		if p := r.URL.Query().Get("page"); p != "" {
+			if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
+				page = parsed
 			}
 		}
+
+		pageSize := 10
+
+		where := ` WHERE 1=1`
+		args := []interface{}{}
+		if category != "all" {
+			args = append(args, category)
+			where += fmt.Sprintf(" AND c.slug = $%d", len(args))
+		}
+		if !includeInactive {
+			where += ` AND q.is_active = TRUE`
+		}
+
+		countQuery := `
+			SELECT COUNT(*)
+			FROM grinfo_questions q
+			JOIN grinfo_categories c ON c.id = q.category_id
+		` + where
+
+		var totalCount int
+		if err := db.QueryRow(countQuery, args...).Scan(&totalCount); err != nil {
+			jsonError(w, "Database error", http.StatusInternalServerError)
+			return
+		}
+
+		totalPages := 1
+		if totalCount > 0 {
+			totalPages = (totalCount + pageSize - 1) / pageSize
+		}
+		if page > totalPages {
+			page = totalPages
+		}
+
+		offset := (page - 1) * pageSize
+		limitPos := len(args) + 1
+		offsetPos := len(args) + 2
 
 		query := `
 			SELECT q.id
 			FROM grinfo_questions q
 			JOIN grinfo_categories c ON c.id = q.category_id
-			WHERE 1=1
-		`
-		args := []interface{}{}
-		if category != "all" {
-			query += ` AND c.slug = $1`
-			args = append(args, category)
-		}
-		if !includeInactive {
-			query += ` AND q.is_active = TRUE`
-		}
-		query += ` ORDER BY q.elo_rating ASC, q.id ASC`
-		if category != "all" {
-			query += ` LIMIT $2`
-			args = append(args, limit)
-		} else {
-			query += ` LIMIT $1`
-			args = append(args, limit)
-		}
+		` + where + fmt.Sprintf(`
+			ORDER BY q.elo_rating ASC, q.id ASC
+			LIMIT $%d OFFSET $%d
+		`, limitPos, offsetPos)
+
+		args = append(args, pageSize, offset)
 
 		rows, err := db.Query(query, args...)
 		if err != nil {
@@ -747,8 +772,12 @@ func apiGrInfoAdminQuestionsHandler(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"questions": questions,
-			"count":     len(questions),
+			"questions":  questions,
+			"count":      len(questions),
+			"totalCount": totalCount,
+			"page":       page,
+			"pageSize":   pageSize,
+			"totalPages": totalPages,
 		})
 
 	case http.MethodPost:
