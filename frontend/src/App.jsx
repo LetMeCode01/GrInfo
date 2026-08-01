@@ -9,16 +9,19 @@ import Login from "./Login";
 import Reviews from "./Reviews";
 import Leaderboard from "./Leaderboard";
 import GrInfoQuiz from "./GrInfoQuiz";
+import Admin from "./Admin";
 import "./assets/main.css";
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
+  const [isAdmin, setIsAdmin] = useState(localStorage.getItem("isAdmin") === "1");
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const themeMenuRef = useRef(null);
   
   const handleAuthChange = () => {
     setToken(localStorage.getItem("token"));
+    setIsAdmin(localStorage.getItem("isAdmin") === "1");
   };
   useEffect(() => {
     window.addEventListener("storage", handleAuthChange);
@@ -43,7 +46,8 @@ export default function App() {
 
   const logout = () => {
     localStorage.clear();
-    setToken(null); 
+    setToken(null);
+    setIsAdmin(false);
     window.location.href = "/";
   };
 
@@ -133,6 +137,7 @@ export default function App() {
           {token ? (
             <>
               <Link className="profile-link header-action-btn" to="/profile">👤 Profil</Link>
+              {isAdmin && <Link className="profile-link header-action-btn" to="/admin">🛠 Admin</Link>}
               <button 
                 className="profile-link logout-link header-action-btn" 
                 onClick={logout}
@@ -157,6 +162,7 @@ export default function App() {
           <Route path="/login" element={<Login onLogin={handleAuthChange} />} />
           <Route path="/register" element={<Register onRegister={handleAuthChange} />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/admin" element={<Admin />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/reviews" element={<Reviews />} />
         </Routes>

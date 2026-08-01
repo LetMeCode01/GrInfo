@@ -50,6 +50,7 @@ export default function Register({ onRegister }) {
       localStorage.setItem("token", data.token);
       localStorage.setItem("username", data.username);
       localStorage.setItem("userId", data.userId);
+      localStorage.setItem("isAdmin", data.isAdmin ? "1" : "0");
       
       if (onRegister) onRegister();
       

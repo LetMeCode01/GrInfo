@@ -37,11 +37,13 @@ type AuthResponse struct {
 	Token    string `json:"token"`
 	Username string `json:"username"`
 	UserID   int    `json:"userId"`
+	IsAdmin  bool   `json:"isAdmin"`
 }
 
 type Claims struct {
 	UserID   int    `json:"userId"`
 	Username string `json:"username"`
+	IsAdmin  bool   `json:"isAdmin"`
 	jwt.RegisteredClaims
 }
 
@@ -113,6 +115,7 @@ func initTables(db *sql.DB) error {
 		username TEXT UNIQUE NOT NULL,
 		email TEXT UNIQUE NOT NULL,
 		password_hash TEXT NOT NULL,
+		is_admin BOOLEAN NOT NULL DEFAULT FALSE,
 		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 	);
 
@@ -130,8 +133,85 @@ func initTables(db *sql.DB) error {
 	CREATE INDEX IF NOT EXISTS idx_reviews_created_at ON reviews(created_at DESC);
 	`
 
-	_, err := db.Exec(schema)
-	return err
+	if _, err := db.Exec(schema); err != nil {
+		return err
+	}
+
+	if _, err := db.Exec(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE`); err != nil {
+		return err
+	}
+
+	if _, err := db.Exec(`CREATE INDEX IF NOT EXISTS idx_users_is_admin ON users(is_admin)`); err != nil {
+		return err
+	}
+
+	if _, err := promoteAdminsByEmail(db); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func parseAdminEmailsFromEnv() []string {
+	raw := strings.TrimSpace(os.Getenv("ADMIN_EMAILS"))
+	if raw == "" {
+		return nil
+	}
+
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	seen := map[string]bool{}
+	for _, p := range parts {
+		email := strings.ToLower(strings.TrimSpace(p))
+		if email == "" || seen[email] {
+			continue
+		}
+		seen[email] = true
+		out = append(out, email)
+	}
+	return out
+}
+
+func shouldEmailBeAdmin(email string) bool {
+	emails := parseAdminEmailsFromEnv()
+	target := strings.ToLower(strings.TrimSpace(email))
+	if target == "" {
+		return false
+	}
+	for _, e := range emails {
+		if e == target {
+			return true
+		}
+	}
+	return false
+}
+
+func promoteAdminsByEmail(db *sql.DB) (int64, error) {
+	emails := parseAdminEmailsFromEnv()
+	if len(emails) == 0 {
+		return 0, nil
+	}
+
+	var total int64
+	for _, email := range emails {
+		res, err := db.Exec(`UPDATE users SET is_admin = TRUE WHERE LOWER(email) = $1`, email)
+		if err != nil {
+			return total, err
+		}
+		affected, _ := res.RowsAffected()
+		total += affected
+	}
+
+	return total, nil
+}
+
+func isAdminUser(userID int) (bool, error) {
+	var isAdmin bool
+	err := db.QueryRow(`SELECT is_admin FROM users WHERE id = $1`, userID).Scan(&isAdmin)
+	if err != nil {
+		return false, err
+	}
+	return isAdmin, nil
 }
 
 func insertTestUserIfNotExists(db *sql.DB, username, email, password string) (int, error) {
@@ -231,6 +311,7 @@ func generateToken(userID int, username string) (string, error) {
 	claims := &Claims{
 		UserID:   userID,
 		Username: username,
+		IsAdmin:  false,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -279,9 +360,37 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		r.Header.Set("X-User-ID", strconv.Itoa(claims.UserID))
 		r.Header.Set("X-Username", claims.Username)
+		r.Header.Set("X-Is-Admin", strconv.FormatBool(claims.IsAdmin))
 
 		next(w, r)
 	}
+}
+
+func adminMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return authMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		uidStr := r.Header.Get("X-User-ID")
+		uid, err := strconv.Atoi(uidStr)
+		if err != nil || uid <= 0 {
+			jsonError(w, "Autentificare invalidă", http.StatusUnauthorized)
+			return
+		}
+
+		isAdmin, err := isAdminUser(uid)
+		if err == sql.ErrNoRows {
+			jsonError(w, "Utilizator inexistent", http.StatusUnauthorized)
+			return
+		}
+		if err != nil {
+			jsonError(w, "Eroare la verificarea permisiunilor", http.StatusInternalServerError)
+			return
+		}
+		if !isAdmin {
+			jsonError(w, "Acces interzis: contul nu are rol de admin", http.StatusForbidden)
+			return
+		}
+
+		next(w, r)
+	})
 }
 
 // API models and handlers
@@ -342,10 +451,12 @@ func apiRegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	isAdmin := shouldEmailBeAdmin(req.Email)
+
 	var userID int
 	err = db.QueryRow(
-		"INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id",
-		req.Username, req.Email, hashedPassword,
+		"INSERT INTO users (username, email, password_hash, is_admin) VALUES ($1, $2, $3, $4) RETURNING id",
+		req.Username, req.Email, hashedPassword, isAdmin,
 	).Scan(&userID)
 	if err != nil {
 		// Postgres unique violation details vary; keep generic message
@@ -363,6 +474,7 @@ func apiRegisterHandler(w http.ResponseWriter, r *http.Request) {
 		Token:    token,
 		Username: req.Username,
 		UserID:   userID,
+		IsAdmin:  isAdmin,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -385,10 +497,11 @@ func apiLoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	var userID int
 	var username, passwordHash string
+	var isAdmin bool
 	err := db.QueryRow(
-		"SELECT id, username, password_hash FROM users WHERE email = $1",
+		"SELECT id, username, password_hash, is_admin FROM users WHERE email = $1",
 		req.Email,
-	).Scan(&userID, &username, &passwordHash)
+	).Scan(&userID, &username, &passwordHash, &isAdmin)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -414,6 +527,7 @@ func apiLoginHandler(w http.ResponseWriter, r *http.Request) {
 		Token:    token,
 		Username: username,
 		UserID:   userID,
+		IsAdmin:  isAdmin,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -425,10 +539,15 @@ func apiProfileHandler(w http.ResponseWriter, r *http.Request) {
 	userIDStr := r.Header.Get("X-User-ID")
 	userID, _ := strconv.Atoi(userIDStr)
 	username := r.Header.Get("X-Username")
+	isAdmin, err := isAdminUser(userID)
+	if err != nil {
+		isAdmin = false
+	}
 
 	response := map[string]interface{}{
 		"userId":   userID,
 		"username": username,
+		"isAdmin":  isAdmin,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -585,6 +704,7 @@ func main() {
 	mux.HandleFunc("/api/user", apiUserHandler)
 	mux.HandleFunc("/api/leaderboard", apiLeaderboardHandler)
 	mux.HandleFunc("/api/grinfo/questions", apiGrInfoQuestionsHandler)
+	mux.HandleFunc("/api/grinfo/admin/questions", adminMiddleware(apiGrInfoAdminQuestionsHandler))
 	mux.HandleFunc("/api/grinfo/categories", apiGrInfoCategoriesHandler)
 	mux.HandleFunc("/api/grinfo/quiz-start", authMiddleware(apiGrInfoSessionStartHandler))
 	mux.HandleFunc("/api/grinfo/quiz-finish", authMiddleware(apiGrInfoSessionFinishHandler))
@@ -635,7 +755,7 @@ func withCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return

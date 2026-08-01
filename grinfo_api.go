@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -67,6 +68,31 @@ type GrInfoCompatSessionRequest struct {
 	FinalElo       float64 `json:"finalElo"`
 	CorrectAnswers int     `json:"correctAnswers"`
 	TotalQuestions int     `json:"totalQuestions"`
+}
+
+type GrInfoAdminQuestion struct {
+	ID                int      `json:"id"`
+	Category          string   `json:"category"`
+	Dificultate       string   `json:"dificultate"`
+	EloRating         int      `json:"eloRating"`
+	Enunt             string   `json:"enunt"`
+	ExplicatieRaspuns string   `json:"explicatieRaspuns"`
+	GraphData         string   `json:"graphData"`
+	Optiuni           []string `json:"optiuni"`
+	RaspunsCorect     int      `json:"raspunsCorect"`
+	IsActive          bool     `json:"isActive"`
+}
+
+type GrInfoAdminQuestionRequest struct {
+	Category          string   `json:"category"`
+	Dificultate       string   `json:"dificultate"`
+	EloRating         int      `json:"eloRating"`
+	Enunt             string   `json:"enunt"`
+	ExplicatieRaspuns string   `json:"explicatieRaspuns"`
+	GraphData         string   `json:"graphData"`
+	Optiuni           []string `json:"optiuni"`
+	RaspunsCorect     int      `json:"raspunsCorect"`
+	IsActive          bool     `json:"isActive"`
 }
 
 func initGrInfoTablesAndSeed(db *sql.DB) error {
@@ -570,6 +596,335 @@ func apiGrInfoQuestionsHandler(w http.ResponseWriter, r *http.Request) {
 		"questions": questions,
 		"count":     len(questions),
 	})
+}
+
+func readGrInfoAdminQuestion(questionID int) (*GrInfoAdminQuestion, error) {
+	var q GrInfoAdminQuestion
+	err := db.QueryRow(`
+		SELECT q.id, c.slug, q.difficulty, q.elo_rating, q.enunt, q.explicatie_raspuns, q.graph_data, q.is_active
+		FROM grinfo_questions q
+		JOIN grinfo_categories c ON c.id = q.category_id
+		WHERE q.id = $1
+	`, questionID).Scan(&q.ID, &q.Category, &q.Dificultate, &q.EloRating, &q.Enunt, &q.ExplicatieRaspuns, &q.GraphData, &q.IsActive)
+	if err != nil {
+		return nil, err
+	}
+
+	optionRows, err := db.Query(`
+		SELECT option_index, option_text, is_correct
+		FROM grinfo_question_options
+		WHERE question_id = $1
+		ORDER BY option_index ASC
+	`, questionID)
+	if err != nil {
+		return nil, err
+	}
+	defer optionRows.Close()
+
+	q.Optiuni = []string{"", "", "", ""}
+	q.RaspunsCorect = 0
+	for optionRows.Next() {
+		var idx int
+		var text string
+		var isCorrect bool
+		if err := optionRows.Scan(&idx, &text, &isCorrect); err != nil {
+			return nil, err
+		}
+		if idx >= 0 && idx < 4 {
+			q.Optiuni[idx] = text
+			if isCorrect {
+				q.RaspunsCorect = idx
+			}
+		}
+	}
+
+	return &q, optionRows.Err()
+}
+
+func parseGrInfoAdminQuestionRequest(r *http.Request) (*GrInfoAdminQuestionRequest, string) {
+	var req GrInfoAdminQuestionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, "Body JSON invalid"
+	}
+
+	req.Category = strings.TrimSpace(strings.ToLower(req.Category))
+	req.Dificultate = strings.TrimSpace(strings.ToLower(req.Dificultate))
+	req.Enunt = strings.TrimSpace(req.Enunt)
+	req.ExplicatieRaspuns = strings.TrimSpace(req.ExplicatieRaspuns)
+	req.GraphData = strings.TrimSpace(req.GraphData)
+
+	if req.Category != "orientate" && req.Category != "neorientate" {
+		return nil, "Categoria trebuie sa fie orientate sau neorientate"
+	}
+	if req.Dificultate != "usoara" && req.Dificultate != "medie" && req.Dificultate != "grea" {
+		return nil, "Dificultatea trebuie sa fie usoara, medie sau grea"
+	}
+	if req.EloRating <= 0 {
+		return nil, "ELO trebuie sa fie mai mare ca 0"
+	}
+	if req.Enunt == "" || req.ExplicatieRaspuns == "" {
+		return nil, "Enuntul si explicatia sunt obligatorii"
+	}
+	if len(req.Optiuni) != 4 {
+		return nil, "Trebuie exact 4 optiuni"
+	}
+	for i := range req.Optiuni {
+		req.Optiuni[i] = strings.TrimSpace(req.Optiuni[i])
+		if req.Optiuni[i] == "" {
+			return nil, "Toate optiunile trebuie completate"
+		}
+	}
+	if req.RaspunsCorect < 0 || req.RaspunsCorect > 3 {
+		return nil, "Raspunsul corect trebuie sa fie intre 0 si 3"
+	}
+	if req.GraphData == "" {
+		req.GraphData = `{}`
+	}
+	if !json.Valid([]byte(req.GraphData)) {
+		return nil, "graphData trebuie sa fie JSON valid"
+	}
+
+	return &req, ""
+}
+
+func apiGrInfoAdminQuestionsHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		category := r.URL.Query().Get("category")
+		if category == "" {
+			category = "all"
+		}
+		includeInactive := r.URL.Query().Get("includeInactive") == "1"
+		limit := 200
+		if l := r.URL.Query().Get("limit"); l != "" {
+			if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 500 {
+				limit = parsed
+			}
+		}
+
+		query := `
+			SELECT q.id
+			FROM grinfo_questions q
+			JOIN grinfo_categories c ON c.id = q.category_id
+			WHERE 1=1
+		`
+		args := []interface{}{}
+		if category != "all" {
+			query += ` AND c.slug = $1`
+			args = append(args, category)
+		}
+		if !includeInactive {
+			query += ` AND q.is_active = TRUE`
+		}
+		query += ` ORDER BY q.elo_rating ASC, q.id ASC`
+		if category != "all" {
+			query += ` LIMIT $2`
+			args = append(args, limit)
+		} else {
+			query += ` LIMIT $1`
+			args = append(args, limit)
+		}
+
+		rows, err := db.Query(query, args...)
+		if err != nil {
+			jsonError(w, "Database error", http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		questions := make([]GrInfoAdminQuestion, 0)
+		for rows.Next() {
+			var qid int
+			if err := rows.Scan(&qid); err != nil {
+				continue
+			}
+			q, err := readGrInfoAdminQuestion(qid)
+			if err != nil {
+				continue
+			}
+			questions = append(questions, *q)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"questions": questions,
+			"count":     len(questions),
+		})
+
+	case http.MethodPost:
+		req, validationErr := parseGrInfoAdminQuestionRequest(r)
+		if validationErr != "" {
+			jsonError(w, validationErr, http.StatusBadRequest)
+			return
+		}
+
+		var categoryID int
+		if err := db.QueryRow(`SELECT id FROM grinfo_categories WHERE slug = $1`, req.Category).Scan(&categoryID); err != nil {
+			jsonError(w, "Categorie invalida", http.StatusBadRequest)
+			return
+		}
+
+		tx, err := db.Begin()
+		if err != nil {
+			jsonError(w, "Database error", http.StatusInternalServerError)
+			return
+		}
+		defer tx.Rollback()
+
+		var newID int
+		err = tx.QueryRow(`
+			INSERT INTO grinfo_questions (category_id, difficulty, elo_rating, enunt, explicatie_raspuns, graph_data, is_active)
+			VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7)
+			RETURNING id
+		`, categoryID, req.Dificultate, req.EloRating, req.Enunt, req.ExplicatieRaspuns, req.GraphData, req.IsActive).Scan(&newID)
+		if err != nil {
+			jsonError(w, "Nu s-a putut crea intrebarea", http.StatusInternalServerError)
+			return
+		}
+
+		for idx := 0; idx < 4; idx++ {
+			if _, err := tx.Exec(`
+				INSERT INTO grinfo_question_options (question_id, option_index, option_text, is_correct)
+				VALUES ($1, $2, $3, $4)
+			`, newID, idx, req.Optiuni[idx], idx == req.RaspunsCorect); err != nil {
+				jsonError(w, "Nu s-au putut salva optiunile", http.StatusInternalServerError)
+				return
+			}
+		}
+
+		if err := tx.Commit(); err != nil {
+			jsonError(w, "Database error", http.StatusInternalServerError)
+			return
+		}
+
+		created, err := readGrInfoAdminQuestion(newID)
+		if err != nil {
+			jsonError(w, "Intrebare creata, dar nu poate fi citita", http.StatusCreated)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(created)
+
+	case http.MethodPut:
+		qid, err := strconv.Atoi(r.URL.Query().Get("id"))
+		if err != nil || qid <= 0 {
+			jsonError(w, "Parametrul id este invalid", http.StatusBadRequest)
+			return
+		}
+
+		req, validationErr := parseGrInfoAdminQuestionRequest(r)
+		if validationErr != "" {
+			jsonError(w, validationErr, http.StatusBadRequest)
+			return
+		}
+
+		var categoryID int
+		if err := db.QueryRow(`SELECT id FROM grinfo_categories WHERE slug = $1`, req.Category).Scan(&categoryID); err != nil {
+			jsonError(w, "Categorie invalida", http.StatusBadRequest)
+			return
+		}
+
+		tx, err := db.Begin()
+		if err != nil {
+			jsonError(w, "Database error", http.StatusInternalServerError)
+			return
+		}
+		defer tx.Rollback()
+
+		res, err := tx.Exec(`
+			UPDATE grinfo_questions
+			SET category_id = $1,
+				difficulty = $2,
+				elo_rating = $3,
+				enunt = $4,
+				explicatie_raspuns = $5,
+				graph_data = $6::jsonb,
+				is_active = $7
+			WHERE id = $8
+		`, categoryID, req.Dificultate, req.EloRating, req.Enunt, req.ExplicatieRaspuns, req.GraphData, req.IsActive, qid)
+		if err != nil {
+			jsonError(w, "Nu s-a putut actualiza intrebarea", http.StatusInternalServerError)
+			return
+		}
+
+		affected, _ := res.RowsAffected()
+		if affected == 0 {
+			jsonError(w, "Intrebarea nu exista", http.StatusNotFound)
+			return
+		}
+
+		if _, err := tx.Exec(`DELETE FROM grinfo_question_options WHERE question_id = $1`, qid); err != nil {
+			jsonError(w, "Nu s-au putut actualiza optiunile", http.StatusInternalServerError)
+			return
+		}
+
+		for idx := 0; idx < 4; idx++ {
+			if _, err := tx.Exec(`
+				INSERT INTO grinfo_question_options (question_id, option_index, option_text, is_correct)
+				VALUES ($1, $2, $3, $4)
+			`, qid, idx, req.Optiuni[idx], idx == req.RaspunsCorect); err != nil {
+				jsonError(w, "Nu s-au putut salva optiunile", http.StatusInternalServerError)
+				return
+			}
+		}
+
+		if err := tx.Commit(); err != nil {
+			jsonError(w, "Database error", http.StatusInternalServerError)
+			return
+		}
+
+		updated, err := readGrInfoAdminQuestion(qid)
+		if err != nil {
+			jsonError(w, "Intrebarea actualizata, dar nu poate fi citita", http.StatusOK)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(updated)
+
+	case http.MethodDelete:
+		qid, err := strconv.Atoi(r.URL.Query().Get("id"))
+		if err != nil || qid <= 0 {
+			jsonError(w, "Parametrul id este invalid", http.StatusBadRequest)
+			return
+		}
+
+		hardDelete := r.URL.Query().Get("hard") == "1"
+		if hardDelete {
+			res, err := db.Exec(`DELETE FROM grinfo_questions WHERE id = $1`, qid)
+			if err != nil {
+				jsonError(w, "Nu s-a putut sterge intrebarea", http.StatusInternalServerError)
+				return
+			}
+			affected, _ := res.RowsAffected()
+			if affected == 0 {
+				jsonError(w, "Intrebarea nu exista", http.StatusNotFound)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "hardDelete": true})
+			return
+		}
+
+		res, err := db.Exec(`UPDATE grinfo_questions SET is_active = FALSE WHERE id = $1`, qid)
+		if err != nil {
+			jsonError(w, "Nu s-a putut dezactiva intrebarea", http.StatusInternalServerError)
+			return
+		}
+		affected, _ := res.RowsAffected()
+		if affected == 0 {
+			jsonError(w, "Intrebarea nu exista", http.StatusNotFound)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "hardDelete": false})
+
+	default:
+		jsonError(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
 }
 
 func apiGrInfoSessionStartHandler(w http.ResponseWriter, r *http.Request) {

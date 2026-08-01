@@ -68,6 +68,12 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
+	if err := initTables(db); err != nil {
+		panic(err)
+	}
+
+	_, _ = db.Exec("DELETE FROM users WHERE email LIKE 'test-%'")
+
 	// Run tests
 	code := m.Run()
 
